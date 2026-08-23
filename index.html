@@ -1,0 +1,1038 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>Claude-OS · Zentrale</title>
+<style>
+  :root{
+    --grund:#040d18;
+    --grund-2:#07131f;
+    --linie:rgba(34,211,238,.15);
+    --linie-stark:rgba(34,211,238,.32);
+    --text:#cfe6f5;
+    --text-leise:#7e9bb0;
+    --cyan:#22d3ee;
+    --bernstein:#ffb020;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"DejaVu Sans Mono",monospace;
+    --panel-breite:250px;
+    --leiste:52px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--grund);
+    color:var(--text);
+    font-family:var(--mono);
+    font-size:15px;
+    line-height:1.55;
+    -webkit-text-size-adjust:100%;
+    overflow-x:hidden;
+  }
+  a{color:var(--cyan)}
+  :focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+
+  /* ---------- Kopfleiste ---------- */
+  .leiste{
+    position:fixed;top:0;left:0;right:0;height:var(--leiste);z-index:60;
+    display:flex;align-items:center;gap:10px;
+    padding:0 12px;
+    background:var(--grund);
+    border-bottom:1px solid var(--linie);
+  }
+  .burger{
+    width:40px;height:40px;flex:0 0 auto;
+    background:transparent;border:1px solid var(--linie);border-radius:2px;
+    color:var(--cyan);font-family:var(--mono);font-size:16px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .burger:hover{border-color:var(--linie-stark)}
+  .burger-striche{display:block;width:18px;height:12px;position:relative}
+  .burger-striche i,.burger-striche::before,.burger-striche::after{
+    content:"";position:absolute;left:0;right:0;height:1.5px;background:currentColor;
+  }
+  .burger-striche::before{top:0}
+  .burger-striche i{top:5px}
+  .burger-striche::after{bottom:0}
+  .leiste-titel{
+    flex:1 1 auto;text-align:center;
+    text-transform:uppercase;letter-spacing:.22em;font-size:12px;color:var(--cyan);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .leiste-zeit{
+    flex:0 0 auto;text-align:right;font-size:11px;color:var(--text-leise);
+    letter-spacing:.06em;line-height:1.25;
+  }
+  .leiste-zeit b{display:block;color:var(--text);font-weight:400;letter-spacing:.1em}
+
+  /* ---------- Navigationspanel ---------- */
+  .abdunkeln{
+    position:fixed;inset:0;z-index:45;background:rgba(2,8,14,.72);
+    opacity:0;pointer-events:none;transition:opacity .18s ease;
+  }
+  body.panel-offen .abdunkeln{opacity:1;pointer-events:auto}
+  .panel{
+    /* Auf dem Handy schiebt sich das Panel UNTER die Kopfleiste ein,
+       damit der Hamburger jederzeit erreichbar bleibt. */
+    position:fixed;top:var(--leiste);bottom:0;left:0;width:var(--panel-breite);z-index:50;
+    background:var(--grund-2);border-right:1px solid var(--linie);
+    transform:translateX(-100%);transition:transform .2s ease;
+    display:flex;flex-direction:column;
+    overflow-y:auto;
+  }
+  body.panel-offen .panel{transform:translateX(0)}
+  .panel-kopf{
+    display:none;height:var(--leiste);align-items:center;
+    padding:0 16px;border-bottom:1px solid var(--linie);
+    text-transform:uppercase;letter-spacing:.22em;font-size:12px;color:var(--cyan);
+  }
+  .panel nav{display:flex;flex-direction:column;padding:8px 0}
+  .navitem{
+    display:block;text-decoration:none;color:var(--text-leise);
+    padding:13px 16px 13px 15px;min-height:44px;
+    border-left:3px solid transparent;
+    text-transform:uppercase;letter-spacing:.16em;font-size:12px;
+  }
+  .navitem small{
+    display:block;letter-spacing:.04em;text-transform:none;
+    font-size:11px;color:#4d6a7e;margin-top:2px;
+  }
+  .navitem:hover{color:var(--text);background:rgba(34,211,238,.05)}
+  .navitem[aria-current="page"]{
+    color:var(--cyan);border-left-color:var(--cyan);background:rgba(34,211,238,.07);
+  }
+  .panel-fuss{
+    margin-top:auto;padding:14px 16px;border-top:1px solid var(--linie);
+    font-size:10px;letter-spacing:.12em;color:#3f5c6e;text-transform:uppercase;
+  }
+
+  /* ---------- Inhalt ---------- */
+  main{padding:calc(var(--leiste) + 18px) 14px 64px;max-width:900px;margin:0 auto}
+  .ansicht{display:none}
+  .ansicht.aktiv{display:block}
+  h1.titel{
+    font-size:13px;text-transform:uppercase;letter-spacing:.28em;color:var(--cyan);
+    margin:0 0 4px;font-weight:400;
+  }
+  .untertitel{font-size:12px;color:var(--text-leise);margin:0 0 18px}
+  h2{
+    font-size:11px;text-transform:uppercase;letter-spacing:.22em;color:var(--text-leise);
+    font-weight:400;margin:26px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--linie);
+  }
+  h2 .zahl{color:var(--cyan);margin-left:6px}
+  p{margin:0 0 10px}
+  /* lange Dateinamen und Pfade brechen um, statt die Seite breit zu ziehen */
+  p,li,td,th,.zeile-titel,.zeile-meta,.pfad,.ruhig,.tag li{overflow-wrap:anywhere}
+  .leise{color:var(--text-leise)}
+  .bernstein{color:var(--bernstein)}
+
+  .beispiel-marke{
+    display:inline-block;margin:0 0 14px;padding:4px 9px;
+    border:1px solid rgba(255,176,32,.45);color:var(--bernstein);
+    font-size:10px;letter-spacing:.2em;text-transform:uppercase;border-radius:2px;
+  }
+  .ruhig{
+    border:1px solid var(--linie);padding:16px;color:var(--text-leise);font-size:13px;
+  }
+  .ruhig b{display:block;color:var(--text);font-weight:400;letter-spacing:.12em;
+    text-transform:uppercase;font-size:11px;margin-bottom:6px}
+
+  /* Blöcke / Listen */
+  .liste{list-style:none;margin:0;padding:0}
+  .liste li{
+    padding:11px 0;border-bottom:1px solid var(--linie);
+  }
+  .liste li:last-child{border-bottom:0}
+  .zeile-titel{display:block;color:var(--text)}
+  .zeile-meta{display:block;font-size:11px;color:var(--text-leise);letter-spacing:.04em;margin-top:3px}
+  .marker{color:var(--cyan);margin-right:8px}
+  .marker.warn{color:var(--bernstein)}
+
+  /* Kennzahlen */
+  .kennzahlen{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:var(--linie);border:1px solid var(--linie);margin:14px 0}
+  .kennzahl{background:var(--grund);padding:12px 10px;text-align:center}
+  .kennzahl b{display:block;font-size:22px;font-weight:400;color:var(--cyan);letter-spacing:.02em}
+  .kennzahl span{display:block;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--text-leise);margin-top:4px}
+  .kennzahl.warn b{color:var(--bernstein)}
+
+  /* Timeline */
+  .timeline{list-style:none;margin:0;padding:0;border-left:1px solid var(--linie);margin-left:6px}
+  .timeline li{position:relative;padding:9px 0 9px 16px}
+  .timeline li::before{
+    content:"";position:absolute;left:-4px;top:16px;width:7px;height:7px;
+    background:var(--cyan);border-radius:50%;
+  }
+  .timeline li.frei{color:var(--text-leise)}
+  .timeline li.frei::before{background:transparent;border:1px solid var(--text-leise)}
+  .timeline .zeit{color:var(--cyan);letter-spacing:.06em;font-size:12px;margin-right:10px}
+  .timeline li.frei .zeit{color:var(--text-leise)}
+
+  /* Tabelle */
+  .tabelle-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  table{border-collapse:collapse;width:100%;font-size:13px;min-width:0}
+  th,td{text-align:left;padding:9px 10px 9px 0;border-bottom:1px solid var(--linie);vertical-align:top}
+  th{
+    font-size:10px;text-transform:uppercase;letter-spacing:.16em;color:var(--text-leise);font-weight:400;
+  }
+  td.datum{white-space:nowrap;color:var(--bernstein)}
+
+  /* Suche */
+  .suche{
+    width:100%;background:var(--grund-2);border:1px solid var(--linie);
+    color:var(--text);font-family:var(--mono);font-size:14px;
+    padding:12px;min-height:44px;margin:6px 0 4px;border-radius:2px;
+  }
+  .suche::placeholder{color:#48657a}
+  .suche:focus{border-color:var(--linie-stark)}
+
+  /* Themenliste Content */
+  .themen{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 6px;padding:0;list-style:none}
+  .themen li{flex:1 1 260px;display:flex}
+  .thema{width:100%;
+    background:transparent;border:1px solid var(--linie);color:var(--text-leise);
+    font-family:var(--mono);font-size:12px;text-align:left;
+    padding:10px 12px;min-height:44px;cursor:pointer;border-radius:2px;
+  }
+  .thema:hover{border-color:var(--linie-stark);color:var(--text)}
+  .thema[aria-pressed="true"]{border-color:var(--cyan);color:var(--cyan);background:rgba(34,211,238,.07)}
+
+  /* Logbuch-Tage */
+  .tag{padding:12px 0;border-bottom:1px solid var(--linie)}
+  .tag-kopf{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+  .tag-datum{color:var(--cyan);font-size:12px;letter-spacing:.08em}
+  .energie{font-size:11px;color:var(--text-leise);letter-spacing:.2em;white-space:nowrap}
+  .energie b{color:var(--bernstein);font-weight:400}
+  .tag ul{margin:8px 0 0;padding-left:16px}
+  .tag li{margin:2px 0}
+
+  /* Kern (der eine auffällige Moment) */
+  .kern-zone{display:flex;align-items:center;gap:18px;margin:6px 0 4px}
+  .kern{
+    position:relative;width:74px;height:74px;flex:0 0 auto;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .kern i{
+    position:absolute;inset:26px;border-radius:50%;background:var(--cyan);
+    box-shadow:0 0 18px rgba(34,211,238,.55);
+    animation:puls 4.6s ease-in-out infinite;
+  }
+  .kern u{
+    position:absolute;inset:8px;border:1px solid var(--linie-stark);border-radius:50%;
+    animation:ring 4.6s ease-in-out infinite;
+  }
+  .kern-zone[data-form="VOLL"] i{animation-duration:1.9s;background:var(--bernstein);box-shadow:0 0 22px rgba(255,176,32,.6)}
+  .kern-zone[data-form="VOLL"] u{animation-duration:1.9s;border-color:rgba(255,176,32,.4)}
+  .kern-zone[data-form="OFFEN"] i{animation-duration:6.4s}
+  .kern-zone[data-form="OFFEN"] u{animation-duration:6.4s}
+  @keyframes puls{0%,100%{transform:scale(.82);opacity:.65}50%{transform:scale(1.12);opacity:1}}
+  @keyframes ring{0%,100%{transform:scale(.9);opacity:.35}50%{transform:scale(1.06);opacity:.8}}
+  .tagesform b{display:block;font-size:26px;letter-spacing:.18em;color:var(--cyan);font-weight:400}
+  .kern-zone[data-form="VOLL"] .tagesform b{color:var(--bernstein)}
+  .tagesform span{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--text-leise)}
+
+  /* Knöpfe */
+  .aktionen{
+    display:flex;flex-wrap:wrap;gap:10px;margin:26px 0 0;
+    padding-top:18px;border-top:1px solid var(--linie);
+  }
+  .knopf{
+    flex:1 1 200px;min-height:44px;
+    display:flex;align-items:center;justify-content:center;text-align:center;
+    padding:12px 14px;
+    border:1px solid var(--cyan);color:var(--cyan);text-decoration:none;
+    text-transform:uppercase;letter-spacing:.14em;font-size:12px;border-radius:2px;
+    background:rgba(34,211,238,.06);
+  }
+  .knopf:hover{background:rgba(34,211,238,.14)}
+  .knopf.zweitrangig{border-color:var(--linie-stark);color:var(--text-leise);background:transparent}
+  .knopf.zweitrangig:hover{color:var(--text);border-color:var(--cyan)}
+  .aktion-hinweis{width:100%;font-size:11px;color:var(--text-leise);margin:0}
+
+  .pfad{color:var(--text);word-break:break-all}
+  .fuss{margin-top:34px;font-size:10px;letter-spacing:.14em;color:#37535f;text-transform:uppercase}
+
+  @media (min-width:900px){
+    .panel{transform:translateX(0);top:0}
+    .panel-kopf{display:flex}
+    .burger{display:none}
+    .abdunkeln{display:none}
+    body{padding-left:var(--panel-breite)}
+    .leiste{left:var(--panel-breite)}
+    .leiste-titel{text-align:left}
+    main{padding-left:26px;padding-right:26px}
+    .kennzahlen{grid-template-columns:repeat(4,1fr)}
+  }
+  @media (max-width:899px){
+    /* ungerade Anzahl: die letzte Kennzahl füllt die Zeile, kein leerer Kasten */
+    .kennzahlen>.kennzahl:last-child:nth-child(odd){grid-column:1 / -1}
+  }
+  @media (max-width:399px){
+    body{font-size:14px}
+    main{padding-left:11px;padding-right:11px}
+    .knopf{flex:1 1 100%}
+    .kennzahl b{font-size:19px}
+    .leiste-zeit{font-size:10px}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *{animation:none !important;transition:none !important}
+  }
+</style>
+</head>
+<body>
+
+<div class="abdunkeln" id="abdunkeln" aria-hidden="true"></div>
+
+<header class="leiste">
+  <button class="burger" id="burger" aria-expanded="false" aria-controls="panel" aria-label="Menü öffnen">
+    <span class="burger-striche" aria-hidden="true"><i></i></span>
+  </button>
+  <div class="leiste-titel" id="leiste-titel">Übersicht</div>
+  <div class="leiste-zeit"><b id="uhr">--:--:--</b><span id="datum">—</span></div>
+</header>
+
+<aside class="panel" id="panel" aria-label="Hauptnavigation">
+  <div class="panel-kopf">Claude-OS</div>
+  <nav id="nav">
+    <a class="navitem" href="#uebersicht" data-view="uebersicht">Übersicht<small>Chief of Staff</small></a>
+    <a class="navitem" href="#heute" data-view="heute">Heute<small>dashboard</small></a>
+    <a class="navitem" href="#archiv" data-view="archiv">Archiv<small>ablage</small></a>
+    <a class="navitem" href="#logbuch" data-view="logbuch">Logbuch<small>chef</small></a>
+    <a class="navitem" href="#content" data-view="content">Content<small>content</small></a>
+    <a class="navitem" href="#einstellungen" data-view="einstellungen">Einstellungen<small>Pfade &amp; Läufe</small></a>
+  </nav>
+  <div class="panel-fuss">Offline · lokale Datei</div>
+</aside>
+
+<main>
+  <section class="ansicht" id="view-uebersicht" aria-labelledby="t-uebersicht">
+    <h1 class="titel" id="t-uebersicht">Übersicht</h1>
+    <p class="untertitel">Chief of Staff · Lage über alle Agenten</p>
+    <div id="inhalt-uebersicht"></div>
+    <div class="aktionen" id="aktionen-uebersicht"></div>
+  </section>
+
+  <section class="ansicht" id="view-heute" aria-labelledby="t-heute">
+    <h1 class="titel" id="t-heute">Heute</h1>
+    <p class="untertitel">dashboard · Tag, Termine, offene Antworten</p>
+    <div id="inhalt-heute"></div>
+    <div class="aktionen" id="aktionen-heute"></div>
+  </section>
+
+  <section class="ansicht" id="view-archiv" aria-labelledby="t-archiv">
+    <h1 class="titel" id="t-archiv">Archiv</h1>
+    <p class="untertitel">ablage · Dokumente, Verträge, Fristen</p>
+    <div id="inhalt-archiv"></div>
+    <div class="aktionen" id="aktionen-archiv"></div>
+  </section>
+
+  <section class="ansicht" id="view-logbuch" aria-labelledby="t-logbuch">
+    <h1 class="titel" id="t-logbuch">Logbuch</h1>
+    <p class="untertitel">chef · sieben Tage und die Wochenauswertung</p>
+    <div id="inhalt-logbuch"></div>
+    <div class="aktionen" id="aktionen-logbuch"></div>
+  </section>
+
+  <section class="ansicht" id="view-content" aria-labelledby="t-content">
+    <h1 class="titel" id="t-content">Content</h1>
+    <p class="untertitel">content · Themen aus dem Markenprofil</p>
+    <div id="inhalt-content"></div>
+    <div class="aktionen" id="aktionen-content"></div>
+  </section>
+
+  <section class="ansicht" id="view-einstellungen" aria-labelledby="t-einstellungen">
+    <h1 class="titel" id="t-einstellungen">Einstellungen</h1>
+    <p class="untertitel">Pfade, letzter Lauf, Kurzanleitung</p>
+    <div id="inhalt-einstellungen"></div>
+    <div class="aktionen" id="aktionen-einstellungen"></div>
+  </section>
+
+  <p class="fuss">Claude-OS · eine Datei · keine externen Aufrufe</p>
+</main>
+
+<!--
+  ============================================================================
+  DATEN-BLOCK
+  ----------------------------------------------------------------------------
+  Die Agenten (dashboard, ablage, chef, content, chief) ersetzen AUSSCHLIESSLICH
+  den Bereich zwischen den beiden Markerzeilen unten im Skript-Block: der Marker
+  DATEN-START steht direkt über dem Objekt, DATEN-ENDE direkt darunter (jeweils
+  als JavaScript-Kommentar). Beide Marker kommen in der Datei genau einmal vor.
+  Struktur, Design und Skript dieser Seite bleiben unberührt — kein einziges
+  Zeichen ausserhalb dieser beiden Marker wird angefasst, keine zweite Datei
+  wird angelegt.
+
+  Schlüssel: uebersicht · heute · archiv · logbuch · content · meta
+  Jeder Agent setzt zusätzlich meta.letzter_lauf.<agent> auf Datum und Uhrzeit.
+  Ist ein Schlüssel leer (null oder {}), zeigt die Ansicht von selbst eine
+  ruhige Zeile — es muss kein Platzhalter eingetragen werden.
+  "beispiel: true" markiert die mitgelieferten Beispielinhalte; der erste echte
+  Lauf entfernt das Feld zusammen mit den Beispieldaten.
+  ============================================================================
+-->
+<script>
+/* DATEN-START */
+const DATEN = {
+
+  uebersicht: {
+    beispiel: true,
+    tagesform: "NORMAL",
+    stand: "2026-08-23 07:40",
+    zahlen: {
+      offene_punkte: 4,
+      fristen_30_tage: 2,
+      tage_seit_logbuch: 1
+    },
+    entscheidungen: [
+      {
+        titel: "Angebot Nordlicht GmbH: Umfang oder Preis anpassen",
+        kontext: "Kunde will zwei Workshops mehr zum selben Budget. Antwort steht seit Donnerstag aus.",
+        agent: "chief"
+      },
+      {
+        titel: "Hosting-Vertrag läuft am 30.09. still weiter",
+        kontext: "Kündigungsfrist endet am 31.08. Danach 12 Monate zu 49 EUR im Monat.",
+        agent: "ablage"
+      },
+      {
+        titel: "Donnerstag-Slot: Akquise oder Produktion",
+        kontext: "Dritte Woche in Folge derselbe Konflikt im Logbuch.",
+        agent: "chef"
+      }
+    ]
+  },
+
+  heute: {
+    beispiel: true,
+    stand: "2026-08-23 07:40",
+    tagesform: "NORMAL",
+    briefing: "Der Vormittag ist zusammenhängend frei, das ist der einzige Unterschied zu gestern. Zwei Termine liegen im Nachmittag, dazwischen bleibt eine gute Stunde. Aus dem Angebot an Nordlicht ist eine Rückfrage geworden, die seit Donnerstag auf eine Antwort wartet. Alles andere läuft ohne dich weiter.",
+    kennzahlen: [
+      { label: "Termine", wert: "2" },
+      { label: "Längstes Fenster", wert: "3,5 h" },
+      { label: "Offene Antworten", wert: "3" },
+      { label: "Fristen heute", wert: "0" }
+    ],
+    timeline: [
+      { von: "08:00", bis: "11:30", titel: "Frei", frei: true },
+      { von: "11:30", bis: "12:15", titel: "Nordlicht GmbH · Rückfrage Angebot", ort: "Videocall" },
+      { von: "12:15", bis: "14:30", titel: "Frei", frei: true },
+      { von: "14:30", bis: "15:30", titel: "Interner Review Q3-Zahlen", ort: "Büro" },
+      { von: "15:30", bis: "18:00", titel: "Frei", frei: true }
+    ],
+    braucht_mich: [
+      { titel: "Rückfrage zum Angebot beantworten", quelle: "Mail · Nordlicht GmbH", warum: "Wartet seit Donnerstag, Termin heute 11:30 baut darauf auf." },
+      { titel: "Zahlen für den Q3-Review zusammenstellen", quelle: "Kalender · 14:30", warum: "Vorbereitung für den Termin heute Nachmittag." },
+      { titel: "Kündigung Hosting-Vertrag entscheiden", quelle: "Archiv · Frist 31.08.", warum: "Nach dem 31.08. verlängert sich der Vertrag um 12 Monate." }
+    ],
+    laeuft_schon: [
+      { titel: "Rechnung 2026-041 an Weber & Co", quelle: "Aufgaben", warum: "Am Freitag versendet, Zahlungsziel 14 Tage." },
+      { titel: "Feedback zum Designentwurf", quelle: "Chat · Studio", warum: "Kollegin hat am Freitag geantwortet, nichts mehr offen." }
+    ],
+    morgen: [
+      { titel: "Workshop-Vorbereitung Nordlicht", quelle: "Kalender · Mo 09:00", warum: "Material und Agenda müssen heute oder morgen früh stehen." },
+      { titel: "Steuerunterlagen August sortieren", quelle: "Aufgaben", warum: "Monatsabschluss, kein Termindruck." }
+    ]
+  },
+
+  archiv: {
+    beispiel: true,
+    stand: "2026-08-22 18:10",
+    fristen: [
+      { datum: "2026-08-31", dokument: "Hosting-Vertrag", gegenpartei: "Serverhaus AG", aktion: "Kündigen oder bewusst verlängern lassen" },
+      { datum: "2026-09-15", dokument: "Berufshaftpflicht", gegenpartei: "Assekura Versicherung", aktion: "Deckungssumme prüfen, Anpassung melden" },
+      { datum: "2026-11-30", dokument: "Rahmenvertrag Beratung", gegenpartei: "Nordlicht GmbH", aktion: "Verlängerung ansprechen oder Konditionen neu verhandeln" }
+    ],
+    dokumente: [
+      { datei: "2026-08-14_Vertrag_Serverhaus-AG_Hosting.md", typ: "Vertrag", gegenpartei: "Serverhaus AG", abgelegt: "2026-08-14", tags: ["hosting", "laufende-kosten", "kuendigung"] },
+      { datei: "2026-08-02_Police_Assekura_Berufshaftpflicht.md", typ: "Versicherung", gegenpartei: "Assekura Versicherung", abgelegt: "2026-08-02", tags: ["versicherung", "haftung", "jaehrlich"] },
+      { datei: "2026-07-21_Vertrag_Nordlicht-GmbH_Rahmenvertrag.md", typ: "Vertrag", gegenpartei: "Nordlicht GmbH", abgelegt: "2026-07-21", tags: ["kunde", "rahmenvertrag", "beratung"] },
+      { datei: "2026-07-05_Rechnung_Weber-und-Co_Projektphase-1.md", typ: "Rechnung", gegenpartei: "Weber & Co", abgelegt: "2026-07-05", tags: ["rechnung", "einnahmen", "projekt"] }
+    ]
+  },
+
+  logbuch: {
+    beispiel: true,
+    stand: "2026-08-22 21:30",
+    tage: [
+      { datum: "2026-08-22", energie: 3, punkte: ["Angebot Nordlicht rausgeschickt, zwei Stunden später als geplant", "Vormittag ging für Mailsortierung drauf", "Review-Zahlen noch nicht angefangen"] },
+      { datum: "2026-08-21", energie: 4, punkte: ["Workshop-Konzept fertig strukturiert", "Ein Termin abgesagt, dadurch drei Stunden am Stück", "Abends nichts mehr angefasst"] },
+      { datum: "2026-08-20", energie: 2, punkte: ["Vier Termine hintereinander, nichts Eigenes geschafft", "Akquise wieder verschoben", "Frühes Ende"] },
+      { datum: "2026-08-19", energie: 4, punkte: ["Projektphase 1 bei Weber abgeschlossen", "Rechnung gestellt", "Erste Notizen zum Workshop"] },
+      { datum: "2026-08-18", energie: 3, punkte: ["Ablage aufgeräumt, Hosting-Frist entdeckt", "Zwei Calls ohne Ergebnis", "Abends Fachartikel gelesen"] },
+      { datum: "2026-08-17", energie: 3, punkte: ["Wochenstart ruhig begonnen", "Angebotsentwurf Nordlicht angefangen", "Akquise verschoben"] },
+      { datum: "2026-08-16", energie: 5, punkte: ["Freier Tag", "Kein Rechner", "Kopf leer bekommen"] }
+    ],
+    woche: {
+      titel: "Woche 34 · 17.08. bis 23.08.",
+      text: "Die Woche ist in Kundenarbeit gegangen, geplant war Akquise. Drei Reibungspunkte kamen mehrfach vor: der Vormittag verschwindet in Mails, Termine werden ohne Puffer gelegt, Akquise wird auf Donnerstag geschoben und dort gestrichen. Vorgenommen und nicht getan: der Akquise-Block, dreimal.",
+      experiment: "Nächste Woche: Akquise auf Dienstag 09:00 legen, vor dem ersten Blick in die Mails. Experiment der Vorwoche (Mails erst ab 11:00) hat an zwei von fünf Tagen gehalten."
+    }
+  },
+
+  content: {
+    beispiel: true,
+    stand: "2026-08-20 16:05",
+    themen: [
+      "Warum Angebote am Umfang scheitern, nicht am Preis",
+      "Der Unterschied zwischen beschäftigt und ausgelastet",
+      "Was Kunden wirklich fragen, bevor sie unterschreiben",
+      "Drei Sätze, die jedes Erstgespräch abkürzen",
+      "Woran man merkt, dass ein Projekt zu groß geschnitten ist",
+      "Wie ich Festpreise kalkuliere, ohne mich zu verrechnen",
+      "Der teuerste Satz im Kundengespräch: 'Machen wir kurz'",
+      "Warum ich Workshops vor Beratung stelle",
+      "Was passiert, wenn niemand die Entscheidung trifft",
+      "Wie man ein Nein formuliert, das die Beziehung hält",
+      "Der Mythos vom schnellen Start",
+      "Wann ein Rahmenvertrag hilft und wann er bindet",
+      "Kleine Kunden, große Reibung: eine Rechnung",
+      "Was ich aus einem verlorenen Angebot gelernt habe",
+      "Warum Prozessberatung ohne Zahlen nicht funktioniert",
+      "Wie lange ein guter Vorschlag wirklich braucht",
+      "Der Kalender als ehrlichste Selbstauskunft",
+      "Warum ich keine Stundensätze mehr nenne",
+      "Was in Übergaben regelmäßig verloren geht",
+      "Die Woche im Rückblick: wo die Zeit hingeht"
+    ],
+    entwuerfe: [
+      { datei: "2026-08-20_post_angebote-scheitern-am-umfang.md", thema: "Warum Angebote am Umfang scheitern, nicht am Preis", datum: "2026-08-20", notiz: "Post, drei erste Zeilen, Skript, Newsletter — Bildidee offen" },
+      { datei: "2026-08-13_post_beschaeftigt-vs-ausgelastet.md", thema: "Der Unterschied zwischen beschäftigt und ausgelastet", datum: "2026-08-13", notiz: "Veröffentlicht, zweite Variante der ersten Zeile lief besser" }
+    ]
+  },
+
+  meta: {
+    beispiel: true,
+    ordner: "Claude-OS",
+    pfade: [
+      { was: "Zentrale", pfad: "index.html" },
+      { was: "Grundregeln", pfad: "CLAUDE.md" },
+      { was: "Anleitung", pfad: "START-HIER.md" },
+      { was: "Skills", pfad: ".claude/skills/" },
+      { was: "Skill-ZIPs", pfad: "skills-zip/" },
+      { was: "Archiv", pfad: "archiv/ · archiv/INDEX.md" },
+      { was: "Logbuch", pfad: "logbuch/logbuch.md · logbuch/wochen/" },
+      { was: "Markenprofil", pfad: "marke/markenprofil.md" },
+      { was: "Entwürfe", pfad: "ausgabe/" }
+    ],
+    letzter_lauf: {
+      dashboard: "2026-08-23 07:40",
+      ablage: "2026-08-22 18:10",
+      chef: "2026-08-22 21:30",
+      content: "2026-08-20 16:05",
+      chief: "2026-08-23 07:40"
+    },
+    skills: [
+      { name: "dashboard", zweck: "Tag, Termine, offene Antworten — füllt heute und die drei Zahlen der Übersicht" },
+      { name: "ablage", zweck: "Dokumente ablegen, Fristen führen — füllt archiv" },
+      { name: "chef", zweck: "Morgen-Check, Abend-Check, Wochen-Auswertung — füllt logbuch" },
+      { name: "content", zweck: "Markenprofil und Entwürfe — füllt content" },
+      { name: "chief", zweck: "verteilt Aufträge an die anderen vier — füllt uebersicht" }
+    ],
+    bedienung: [
+      "Ansicht wählen, unten den passenden Knopf drücken — es öffnet sich ein frischer Claude-Chat mit fertigem Auftrag.",
+      "Der Agent arbeitet im Projektordner und schreibt sein Ergebnis in den DATEN-Block dieser Datei.",
+      "Diese Seite danach neu laden. Sie lädt nichts nach und funktioniert ohne Netz."
+    ]
+  }
+
+};
+/* DATEN-ENDE */
+</script>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---------- Werkzeug ---------- */
+  function esc(wert){
+    if(wert === null || wert === undefined) return "";
+    return String(wert)
+      .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+      .replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+  }
+  function leer(x){
+    if(x === null || x === undefined) return true;
+    if(Array.isArray(x)) return x.length === 0;
+    if(typeof x === "object"){
+      var k = Object.keys(x).filter(function(n){ return n !== "beispiel"; });
+      return k.length === 0;
+    }
+    return String(x).trim() === "";
+  }
+  function daten(schluessel){
+    return (typeof DATEN === "object" && DATEN) ? DATEN[schluessel] : null;
+  }
+  function beispielMarke(d){
+    return (d && d.beispiel) ? '<div class="beispiel-marke">Beispielinhalt — der erste echte Lauf ersetzt ihn</div>' : "";
+  }
+  function ruhig(text, knopf){
+    return '<div class="ruhig"><b>Noch nichts hinterlegt</b>' + esc(text) +
+           ' Start über den Knopf <span class="marker">&rsaquo;</span>' + esc(knopf) + '</div>';
+  }
+
+  /* ---------- Aufträge für die Knöpfe ---------- */
+  var BASIS = "https://claude.ai/new?q=";
+  function link(auftrag){ return BASIS + encodeURIComponent(auftrag); }
+
+  var ORDNER = "meinem Claude-OS-Ordner";
+  var SCHREIB = " Trag das Ergebnis danach in den DATEN-Block der index.html ein (nur der Bereich zwischen DATEN-START und DATEN-ENDE) und setz meta.letzter_lauf.";
+
+  var AUFTRAEGE = {
+    lage:
+      "Nutze den Skill chief. Verschaff mir einen Lagebericht für heute: entscheide selbst, welche Agenten du dafür brauchst (dashboard fuer Tag und Termine, ablage fuer Fristen, chef fuer Muster) und ruf sie nacheinander auf. Ergebnis: Tagesform in einem Wort, die drei Zahlen (offene Punkte heute, Fristen in den naechsten 30 Tagen, Tage seit dem letzten Logbuch-Eintrag) und hoechstens drei Dinge, die heute eine Entscheidung von mir brauchen." +
+      SCHREIB + "chief in " + ORDNER + ".",
+    lagebericht:
+      "Nutze den Skill chief und gib mir den woechentlichen Lagebericht: was diese Woche ueber dich lief und was es an Zeit gespart hat, wo du auf mich warten musstest und ob das noetig war, und eine Aufgabe, die naechste Woche zu dir wandern sollte, mit Vorschlag wie. Hoechstens 200 Woerter." +
+      SCHREIB + "chief in " + ORDNER + ".",
+    tag:
+      "Nutze den Skill dashboard und lade meinen Tag neu: Kalender von heute 00:00 bis morgen 24:00, Mails der letzten drei Tage mit direkter offener Frage an mich, Chat-DMs und Erwaehnungen der letzten zwei Tage mit offener Frage, Aufgaben die heute faellig oder ueberfaellig sind. Sortier jeden Fund in genau einen Block: BRAUCHT MICH HEUTE oder LAEUFT SCHON, dazu die Vorbereitung fuer morgige Termine. Dazu Briefing, Kennzahlen, Timeline mit freien Bloecken und die Tagesform." +
+      SCHREIB + "dashboard in " + ORDNER + ".",
+    abend:
+      "Nutze den Skill chef und mach mit mir den Abend-Check. Stell mir die vier Fragen einzeln und warte jeweils auf meine Antwort. Danach schreib den Eintrag nach logbuch/logbuch.md, neuester Eintrag oben, mit Datum, Energie 1-5, drei Stichpunkten und der einen Sache fuer morgen." +
+      SCHREIB + "chef in " + ORDNER + ".",
+    morgen:
+      "Nutze den Skill chef und mach mit mir den Morgen-Check: lies die letzten sieben Eintraege in logbuch/logbuch.md und gib mir hoechstens 120 Woerter — was ich mir gestern fuer heute vorgenommen habe, die eine Sache die heute passieren muss, ein echtes Muster der letzten Woche und das, was ich dreimal verschoben habe, mit den drei Optionen gestrichen, delegiert oder heute erledigt." +
+      SCHREIB + "chef in " + ORDNER + ".",
+    woche:
+      "Nutze den Skill chef und mach die Wochen-Auswertung: lies die letzten sieben Tage aus logbuch/logbuch.md und schreib die Auswertung nach logbuch/wochen/. Hoechstens 300 Woerter, beschreibend statt bewertend, mit einem einzigen konkreten Experiment fuer naechste Woche und der Frage, ob das Experiment der Vorwoche gewirkt hat." +
+      SCHREIB + "chef in " + ORDNER + ".",
+    ablegen:
+      "Nutze den Skill ablage. Ich haenge gleich ein Dokument an oder sage dir, wo es liegt. Zieh Typ, Gegenpartei, Vertragsnummer, Beginn, Laufzeit, Kuendigungsfrist, naechstes Handlungsdatum mit Handlung, Betraege und Rhythmus, die zwei Klauseln die mich spaeter beissen koennen und drei Schlagworte heraus. Leg es als Markdown mit YAML-Kopf in archiv/ ab und trag es in archiv/INDEX.md nach." +
+      SCHREIB + "ablage in " + ORDNER + ".",
+    archivcheck:
+      "Nutze den Skill ablage und mach einen Archiv-Check ueber archiv/: welche Fristen laufen in den naechsten 90 Tagen ab, was verlaengert sich automatisch, wo zahle ich doppelt oder fuer Ungenutztes, und was fehlt komplett. Ein Datum und eine Handlung pro Zeile." +
+      SCHREIB + "ablage in " + ORDNER + ".",
+    suchen:
+      "Nutze den Skill ablage und beantworte mir eine Frage aus meinen Unterlagen. Such zuerst in archiv/, antworte mit der Stelle aus dem Dokument statt aus dem Gedaechtnis, und sag klar 'steht nicht im Archiv', wenn du nichts findest. Meine Frage: ",
+    marke:
+      "Nutze den Skill content und oeffne zuerst marke/markenprofil.md. Ist die Datei noch die leere Vorlage, fuehr mit mir das Interview: immer nur eine Frage, warte auf meine Antwort, hak nach wenn ich vage bleibe. Danach fuell markenprofil.md vollstaendig aus, inklusive der 20 Themen, und frag mich zum Schluss, was nicht stimmt." +
+      SCHREIB + "content in " + ORDNER + ".",
+    postBasis:
+      "Nutze den Skill content, lies zuerst marke/markenprofil.md und arbeite dann dieses Thema aus: ",
+    postRest:
+      ". Zeig mir zuerst nur die drei deutlich verschiedenen ersten Zeilen und warte auf meine Wahl. Danach der Rest: LinkedIn-Post, 40-Sekunden-Video-Skript, Newsletter-Abschnitt mit 150 Woertern und eine Bildidee in einem Satz. Entwuerfe nach ausgabe/." +
+      SCHREIB + "content in " + ORDNER + ".",
+    postOhneThema:
+      "Nutze den Skill content, lies zuerst marke/markenprofil.md und schlag mir drei Themen aus der Themenliste vor, die zu dieser Woche passen. Ich waehle eins, danach zeigst du mir zuerst nur die drei ersten Zeilen und arbeitest nach meiner Wahl den Rest aus: LinkedIn-Post, 40-Sekunden-Video-Skript, Newsletter-Abschnitt mit 150 Woertern und eine Bildidee. Entwuerfe nach ausgabe/." +
+      SCHREIB + "content in " + ORDNER + ".",
+    zentralePruefen:
+      "Nutze den Skill chief und pruef den Zustand meiner Claude-OS-Zentrale: welcher Agent hat zuletzt wann geschrieben (meta.letzter_lauf in der index.html), welcher Schluessel im DATEN-Block ist leer oder veraltet, und welche Ordner fehlen. Nenn mir hoechstens zwei Punkte, die ich entscheiden muss.",
+    skillsPruefen:
+      "Nutze den Skill chief und pruef meine fuenf Skills in .claude/skills/ (dashboard, ablage, chef, content, chief): hat jede SKILL.md gueltiges Frontmatter mit name und description, und sagt die description, WANN der Skill greift und nicht nur was er ist? Nenn konkrete Verbesserungen, aendere nichts ohne meine Freigabe."
+  };
+
+  var KNOEPFE = {
+    uebersicht: [
+      { text: "Lage prüfen", auftrag: AUFTRAEGE.lage },
+      { text: "Lagebericht holen", auftrag: AUFTRAEGE.lagebericht, zweitrangig: true }
+    ],
+    heute: [
+      { text: "Tag neu laden", auftrag: AUFTRAEGE.tag },
+      { text: "Morgen-Check starten", auftrag: AUFTRAEGE.morgen, zweitrangig: true },
+      { text: "Abend-Check starten", auftrag: AUFTRAEGE.abend, zweitrangig: true }
+    ],
+    archiv: [
+      { text: "Dokument ablegen", auftrag: AUFTRAEGE.ablegen },
+      { text: "Archiv-Check starten", auftrag: AUFTRAEGE.archivcheck, zweitrangig: true },
+      { text: "Unterlagen befragen", auftrag: AUFTRAEGE.suchen, zweitrangig: true }
+    ],
+    logbuch: [
+      { text: "Abend-Check starten", auftrag: AUFTRAEGE.abend },
+      { text: "Morgen-Check starten", auftrag: AUFTRAEGE.morgen, zweitrangig: true },
+      { text: "Woche auswerten", auftrag: AUFTRAEGE.woche, zweitrangig: true }
+    ],
+    content: [
+      { text: "Post schreiben", auftrag: AUFTRAEGE.postOhneThema, id: "knopf-post" },
+      { text: "Markenprofil füllen", auftrag: AUFTRAEGE.marke, zweitrangig: true }
+    ],
+    einstellungen: [
+      { text: "Zentrale prüfen", auftrag: AUFTRAEGE.zentralePruefen },
+      { text: "Skills prüfen", auftrag: AUFTRAEGE.skillsPruefen, zweitrangig: true }
+    ]
+  };
+
+  function knopfHtml(k){
+    return '<a class="knopf' + (k.zweitrangig ? " zweitrangig" : "") + '"' +
+           (k.id ? ' id="' + k.id + '"' : "") +
+           ' href="' + esc(link(k.auftrag)) + '" target="_blank" rel="noopener">' + esc(k.text) + '</a>';
+  }
+  function knoepfeSetzen(){
+    Object.keys(KNOEPFE).forEach(function(ansicht){
+      var ziel = document.getElementById("aktionen-" + ansicht);
+      if(!ziel) return;
+      ziel.innerHTML = KNOEPFE[ansicht].map(knopfHtml).join("") +
+        '<p class="aktion-hinweis">Öffnet einen frischen Claude-Chat mit fertigem Auftrag.</p>';
+    });
+  }
+
+  /* ---------- Ansichten zeichnen ---------- */
+
+  function zeichneUebersicht(){
+    var d = daten("uebersicht") || {};
+    var ziel = document.getElementById("inhalt-uebersicht");
+    if(leer(d)){
+      ziel.innerHTML = ruhig("Der Chief of Staff nimmt entgegen, was ansteht, verteilt es an dashboard, ablage, chef oder content und liefert ein Ergebnis statt vier.", "Lage prüfen");
+      return;
+    }
+    var form = d.tagesform || "NORMAL";
+    var z = d.zahlen || {};
+    var html = beispielMarke(d);
+    html += '<div class="kern-zone" data-form="' + esc(form) + '">' +
+              '<div class="kern" aria-hidden="true"><u></u><i></i></div>' +
+              '<div class="tagesform"><b>' + esc(form) + '</b><span>Tagesform</span></div>' +
+            '</div>';
+    html += '<div class="kennzahlen">' +
+      kz(z.offene_punkte, "Offene Punkte heute") +
+      kz(z.fristen_30_tage, "Fristen in 30 Tagen", true) +
+      kz(z.tage_seit_logbuch, "Tage seit Logbuch") +
+    '</div>';
+
+    var e = d.entscheidungen || [];
+    html += '<h2>Braucht heute eine Entscheidung<span class="zahl">' + e.length + '</span></h2>';
+    if(!e.length){
+      html += '<p class="leise">Nichts. Keine Entscheidung offen.</p>';
+    } else {
+      html += '<ul class="liste">' + e.slice(0,3).map(function(p){
+        return '<li><span class="zeile-titel"><span class="marker">&rsaquo;</span>' + esc(p.titel) + '</span>' +
+               '<span class="zeile-meta">' + esc(p.kontext) + (p.agent ? " · " + esc(p.agent) : "") + '</span></li>';
+      }).join("") + '</ul>';
+    }
+    if(d.stand) html += '<p class="zeile-meta">Stand ' + esc(d.stand) + '</p>';
+    ziel.innerHTML = html;
+  }
+  function kz(wert, label, warn){
+    var w = (wert === null || wert === undefined || wert === "") ? "–" : wert;
+    return '<div class="kennzahl' + (warn ? " warn" : "") + '"><b>' + esc(w) + '</b><span>' + esc(label) + '</span></div>';
+  }
+
+  function zeichneHeute(){
+    var d = daten("heute") || {};
+    var ziel = document.getElementById("inhalt-heute");
+    if(leer(d)){
+      ziel.innerHTML = ruhig("Der dashboard-Agent liest Kalender, Mails, Chats und Aufgaben nur mit, sortiert alles in BRAUCHT MICH HEUTE oder LÄUFT SCHON und schreibt das Briefing.", "Tag neu laden");
+      return;
+    }
+    var html = beispielMarke(d);
+    if(d.briefing) html += '<p>' + esc(d.briefing) + '</p>';
+
+    if(d.kennzahlen && d.kennzahlen.length){
+      html += '<div class="kennzahlen">' + d.kennzahlen.map(function(k){
+        return kz(k.wert, k.label, !!k.warn);
+      }).join("") + '</div>';
+    }
+    if(d.timeline && d.timeline.length){
+      html += '<h2>Tagesverlauf</h2><ul class="timeline">' + d.timeline.map(function(t){
+        var zeit = esc(t.von || "") + (t.bis ? "–" + esc(t.bis) : "");
+        return '<li class="' + (t.frei ? "frei" : "") + '"><span class="zeit">' + zeit + '</span>' +
+               esc(t.titel) + (t.ort ? '<span class="zeile-meta">' + esc(t.ort) + '</span>' : "") + '</li>';
+      }).join("") + '</ul>';
+    }
+    html += block("Braucht mich heute", d.braucht_mich, true);
+    html += block("Läuft schon", d.laeuft_schon, false);
+    html += block("Morgen", d.morgen, false);
+    if(d.stand) html += '<p class="zeile-meta">Stand ' + esc(d.stand) + '</p>';
+    ziel.innerHTML = html;
+  }
+  function block(titel, eintraege, warn){
+    var e = eintraege || [];
+    var html = '<h2>' + esc(titel) + '<span class="zahl">' + e.length + '</span></h2>';
+    if(!e.length) return html + '<p class="leise">Nichts in diesem Block.</p>';
+    return html + '<ul class="liste">' + e.map(function(p){
+      return '<li><span class="zeile-titel"><span class="marker' + (warn ? " warn" : "") + '">&rsaquo;</span>' + esc(p.titel) + '</span>' +
+             '<span class="zeile-meta">' + esc(p.quelle || "") + (p.warum ? " · " + esc(p.warum) : "") + '</span></li>';
+    }).join("") + '</ul>';
+  }
+
+  function zeichneArchiv(){
+    var d = daten("archiv") || {};
+    var ziel = document.getElementById("inhalt-archiv");
+    if(leer(d)){
+      ziel.innerHTML = ruhig("Der ablage-Agent liest Verträge und Rechnungen aus, legt sie mit Frist und nächster Handlung in archiv/ ab und pflegt archiv/INDEX.md.", "Dokument ablegen");
+      return;
+    }
+    var html = beispielMarke(d);
+    var f = d.fristen || [];
+    html += '<h2>Nächste Fristen<span class="zahl">' + f.length + '</span></h2>';
+    if(!f.length){
+      html += '<p class="leise">Keine Frist erfasst.</p>';
+    } else {
+      var sortiert = f.slice().sort(function(a,b){ return String(a.datum).localeCompare(String(b.datum)); });
+      html += '<div class="tabelle-wrap"><table><thead><tr><th>Datum</th><th>Dokument</th><th>Gegenpartei</th><th>Aktion</th></tr></thead><tbody>' +
+        sortiert.map(function(r){
+          return '<tr><td class="datum">' + esc(r.datum) + '</td><td>' + esc(r.dokument) + '</td><td>' +
+                 esc(r.gegenpartei) + '</td><td>' + esc(r.aktion) + '</td></tr>';
+        }).join("") + '</tbody></table></div>';
+    }
+    html += '<h2>Dokumente durchsuchen</h2>' +
+      '<label class="zeile-meta" for="archiv-suche">Filtert über Titel und Schlagworte</label>' +
+      '<input class="suche" id="archiv-suche" type="search" autocomplete="off" placeholder="Suchen: Titel oder Schlagwort">' +
+      '<div id="archiv-treffer"></div>';
+    if(d.stand) html += '<p class="zeile-meta">Stand ' + esc(d.stand) + '</p>';
+    ziel.innerHTML = html;
+
+    var feld = document.getElementById("archiv-suche");
+    if(feld){
+      feld.addEventListener("input", function(){ archivTreffer(feld.value); });
+    }
+    archivTreffer("");
+  }
+  function archivTreffer(such){
+    var ziel = document.getElementById("archiv-treffer");
+    if(!ziel) return;
+    var alle = (daten("archiv") || {}).dokumente || [];
+    var q = String(such || "").trim().toLowerCase();
+    var treffer = !q ? alle : alle.filter(function(dok){
+      var heu = [dok.datei, dok.typ, dok.gegenpartei].concat(dok.tags || []).join(" ").toLowerCase();
+      return heu.indexOf(q) !== -1;
+    });
+    if(!alle.length){
+      ziel.innerHTML = '<p class="leise">Noch kein Dokument abgelegt.</p>';
+      return;
+    }
+    if(!treffer.length){
+      ziel.innerHTML = '<p class="leise">Kein Treffer für diesen Begriff.</p>';
+      return;
+    }
+    ziel.innerHTML = '<ul class="liste">' + treffer.map(function(dok){
+      var tags = (dok.tags || []).join(" · ");
+      return '<li><span class="zeile-titel"><span class="marker">&rsaquo;</span>' + esc(dok.datei) + '</span>' +
+             '<span class="zeile-meta">' + esc(dok.typ || "") + ' · ' + esc(dok.gegenpartei || "") +
+             (dok.abgelegt ? ' · abgelegt ' + esc(dok.abgelegt) : "") +
+             (tags ? ' · ' + esc(tags) : "") + '</span></li>';
+    }).join("") + '</ul>';
+  }
+
+  function zeichneLogbuch(){
+    var d = daten("logbuch") || {};
+    var ziel = document.getElementById("inhalt-logbuch");
+    if(leer(d)){
+      ziel.innerHTML = ruhig("Der chef-Agent fragt abends vier Fragen, schreibt den Eintrag nach logbuch/logbuch.md und wertet die Woche aus. Er lobt nicht und tröstet nicht.", "Abend-Check starten");
+      return;
+    }
+    var html = beispielMarke(d);
+    var tage = (d.tage || []).slice(0,7);
+    html += '<h2>Letzte sieben Tage<span class="zahl">' + tage.length + '</span></h2>';
+    if(!tage.length){
+      html += '<p class="leise">Noch kein Eintrag.</p>';
+    } else {
+      html += tage.map(function(t){
+        var e = Math.max(0, Math.min(5, Number(t.energie) || 0));
+        var balken = "";
+        for(var i=1;i<=5;i++){ balken += (i <= e) ? "▮" : "▯"; }
+        return '<div class="tag"><div class="tag-kopf"><span class="tag-datum">' + esc(t.datum) + '</span>' +
+               '<span class="energie">Energie <b>' + esc(balken) + '</b> ' + esc(e) + '/5</span></div>' +
+               '<ul>' + (t.punkte || []).map(function(p){ return '<li>' + esc(p) + '</li>'; }).join("") + '</ul></div>';
+      }).join("");
+    }
+    var w = d.woche;
+    html += '<h2>Wochenauswertung</h2>';
+    if(!w || leer(w)){
+      html += '<p class="leise">Noch keine Auswertung geschrieben.</p>';
+    } else {
+      html += '<p><span class="marker">&rsaquo;</span>' + esc(w.titel || "") + '</p>';
+      if(w.text) html += '<p>' + esc(w.text) + '</p>';
+      if(w.experiment) html += '<p class="bernstein">' + esc(w.experiment) + '</p>';
+    }
+    if(d.stand) html += '<p class="zeile-meta">Stand ' + esc(d.stand) + '</p>';
+    ziel.innerHTML = html;
+  }
+
+  var gewaehltesThema = null;
+
+  function zeichneContent(){
+    var d = daten("content") || {};
+    var ziel = document.getElementById("inhalt-content");
+    if(leer(d)){
+      ziel.innerHTML = ruhig("Der content-Agent füllt zuerst marke/markenprofil.md im Interview und schreibt danach aus jedem Thema Post, Skript, Newsletter und Bildidee.", "Markenprofil füllen");
+      return;
+    }
+    var html = beispielMarke(d);
+    var themen = d.themen || [];
+    html += '<h2>Themen aus dem Markenprofil<span class="zahl">' + themen.length + '</span></h2>';
+    if(!themen.length){
+      html += '<p class="leise">Noch keine Themen — die entstehen im Interview zum Markenprofil.</p>';
+    } else {
+      html += '<p class="zeile-meta">Thema antippen — es steht danach im Auftrag des Knopfes.</p>';
+      html += '<ul class="themen">' + themen.map(function(t, i){
+        return '<li><button class="thema" type="button" data-thema="' + esc(t) + '" aria-pressed="false">' +
+               String(i+1).padStart(2,"0") + ' · ' + esc(t) + '</button></li>';
+      }).join("") + '</ul>';
+      html += '<p class="zeile-meta" id="thema-stand" aria-live="polite">Kein Thema gewählt — der Knopf lässt dich dann drei vorschlagen.</p>';
+    }
+    var ent = d.entwuerfe || [];
+    html += '<h2>Letzte Entwürfe<span class="zahl">' + ent.length + '</span></h2>';
+    if(!ent.length){
+      html += '<p class="leise">Noch kein Entwurf in ausgabe/.</p>';
+    } else {
+      html += '<ul class="liste">' + ent.map(function(e){
+        return '<li><span class="zeile-titel"><span class="marker">&rsaquo;</span>' + esc(e.datei) + '</span>' +
+               '<span class="zeile-meta">' + esc(e.thema || "") + (e.datum ? ' · ' + esc(e.datum) : "") +
+               (e.notiz ? ' · ' + esc(e.notiz) : "") + '</span></li>';
+      }).join("") + '</ul>';
+    }
+    if(d.stand) html += '<p class="zeile-meta">Stand ' + esc(d.stand) + '</p>';
+    ziel.innerHTML = html;
+
+    Array.prototype.forEach.call(ziel.querySelectorAll(".thema"), function(btn){
+      btn.addEventListener("click", function(){
+        var thema = btn.getAttribute("data-thema");
+        var schonAktiv = btn.getAttribute("aria-pressed") === "true";
+        Array.prototype.forEach.call(ziel.querySelectorAll(".thema"), function(b){
+          b.setAttribute("aria-pressed","false");
+        });
+        gewaehltesThema = schonAktiv ? null : thema;
+        if(!schonAktiv) btn.setAttribute("aria-pressed","true");
+        themaUebernehmen();
+      });
+    });
+    themaUebernehmen();
+  }
+  function themaUebernehmen(){
+    var knopf = document.getElementById("knopf-post");
+    var stand = document.getElementById("thema-stand");
+    if(knopf){
+      var auftrag = gewaehltesThema
+        ? (AUFTRAEGE.postBasis + gewaehltesThema + AUFTRAEGE.postRest)
+        : AUFTRAEGE.postOhneThema;
+      knopf.setAttribute("href", link(auftrag));
+    }
+    if(stand){
+      stand.textContent = gewaehltesThema
+        ? "Im Auftrag: " + gewaehltesThema
+        : "Kein Thema gewählt — der Knopf lässt dich dann drei vorschlagen.";
+    }
+  }
+
+  function zeichneEinstellungen(){
+    var d = daten("meta") || {};
+    var ziel = document.getElementById("inhalt-einstellungen");
+    if(leer(d)){
+      ziel.innerHTML = ruhig("Hier stehen Ordnerpfade, der letzte Lauf jedes Agenten und die Kurzanleitung.", "Zentrale prüfen");
+      return;
+    }
+    var html = beispielMarke(d);
+    html += '<h2>Ordner</h2>';
+    var p = d.pfade || [];
+    html += p.length
+      ? '<div class="tabelle-wrap"><table><tbody>' + p.map(function(r){
+          return '<tr><td>' + esc(r.was) + '</td><td class="pfad">' + esc(r.pfad) + '</td></tr>';
+        }).join("") + '</tbody></table></div>'
+      : '<p class="leise">Keine Pfade hinterlegt.</p>';
+
+    html += '<h2>Letzter Lauf</h2>';
+    var l = d.letzter_lauf || {};
+    var namen = Object.keys(l);
+    html += namen.length
+      ? '<div class="tabelle-wrap"><table><tbody>' + namen.map(function(n){
+          return '<tr><td>' + esc(n) + '</td><td class="pfad">' + esc(l[n] || "noch nie gelaufen") + '</td></tr>';
+        }).join("") + '</tbody></table></div>'
+      : '<p class="leise">Noch kein Agent gelaufen.</p>';
+
+    html += '<h2>Skills</h2>';
+    var s = d.skills || [];
+    html += s.length
+      ? '<ul class="liste">' + s.map(function(k){
+          return '<li><span class="zeile-titel"><span class="marker">&rsaquo;</span>' + esc(k.name) + '</span>' +
+                 '<span class="zeile-meta">' + esc(k.zweck) + '</span></li>';
+        }).join("") + '</ul>'
+      : '<p class="leise">Keine Skills eingetragen.</p>';
+
+    html += '<h2>Bedienung</h2>';
+    var b = d.bedienung || [];
+    html += b.length
+      ? '<ul class="liste">' + b.map(function(t){
+          return '<li><span class="zeile-titel"><span class="marker">&rsaquo;</span>' + esc(t) + '</span></li>';
+        }).join("") + '</ul>'
+      : '<p class="leise">Kurzanleitung siehe START-HIER.md</p>';
+    ziel.innerHTML = html;
+  }
+
+  /* ---------- Navigation ---------- */
+  var ANSICHTEN = ["uebersicht","heute","archiv","logbuch","content","einstellungen"];
+  var TITEL = {
+    uebersicht:"Übersicht", heute:"Heute", archiv:"Archiv",
+    logbuch:"Logbuch", content:"Content", einstellungen:"Einstellungen"
+  };
+  var panel = document.getElementById("panel");
+  var burger = document.getElementById("burger");
+  var abdunkeln = document.getElementById("abdunkeln");
+
+  function breit(){ return window.matchMedia("(min-width:900px)").matches; }
+  function panelAuf(){
+    if(breit()) return;
+    document.body.classList.add("panel-offen");
+    burger.setAttribute("aria-expanded","true");
+    burger.setAttribute("aria-label","Menü schließen");
+  }
+  function panelZu(){
+    document.body.classList.remove("panel-offen");
+    burger.setAttribute("aria-expanded","false");
+    burger.setAttribute("aria-label","Menü öffnen");
+  }
+  function panelUmschalten(){
+    if(document.body.classList.contains("panel-offen")) panelZu(); else panelAuf();
+  }
+
+  function zeige(ansicht){
+    if(ANSICHTEN.indexOf(ansicht) === -1) ansicht = "uebersicht";
+    ANSICHTEN.forEach(function(a){
+      var el = document.getElementById("view-" + a);
+      if(el) el.classList.toggle("aktiv", a === ansicht);
+    });
+    Array.prototype.forEach.call(document.querySelectorAll(".navitem"), function(n){
+      if(n.getAttribute("data-view") === ansicht) n.setAttribute("aria-current","page");
+      else n.removeAttribute("aria-current");
+    });
+    document.getElementById("leiste-titel").textContent = TITEL[ansicht];
+    document.title = "Claude-OS · " + TITEL[ansicht];
+    panelZu();
+    window.scrollTo(0,0);
+  }
+  function ausHash(){
+    return String(window.location.hash || "").replace(/^#/,"");
+  }
+
+  burger.addEventListener("click", panelUmschalten);
+  abdunkeln.addEventListener("click", panelZu);
+  Array.prototype.forEach.call(document.querySelectorAll(".navitem"), function(n){
+    n.addEventListener("click", function(){
+      /* schliesst auch dann, wenn dieselbe Ansicht erneut gewaehlt wird */
+      panelZu();
+    });
+  });
+  document.addEventListener("keydown", function(ev){
+    if(ev.key === "Escape") panelZu();
+  });
+  window.addEventListener("hashchange", function(){ zeige(ausHash()); });
+  window.addEventListener("resize", function(){ if(breit()) panelZu(); });
+
+  /* ---------- Uhr ---------- */
+  function uhrStellen(){
+    var jetzt = new Date();
+    var u = document.getElementById("uhr");
+    var dtm = document.getElementById("datum");
+    try{
+      u.textContent = jetzt.toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit",second:"2-digit"});
+      dtm.textContent = jetzt.toLocaleDateString("de-DE",{weekday:"short",day:"2-digit",month:"2-digit",year:"numeric"});
+    }catch(e){
+      u.textContent = jetzt.toTimeString().slice(0,8);
+      dtm.textContent = jetzt.toDateString();
+    }
+  }
+
+  /* ---------- Start ---------- */
+  knoepfeSetzen();
+  zeichneUebersicht();
+  zeichneHeute();
+  zeichneArchiv();
+  zeichneLogbuch();
+  zeichneContent();
+  zeichneEinstellungen();
+  zeige(ausHash() || "uebersicht");
+  uhrStellen();
+  setInterval(uhrStellen, 1000);
+})();
+</script>
+</body>
+</html>
