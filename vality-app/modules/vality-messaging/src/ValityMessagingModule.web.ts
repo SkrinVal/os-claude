@@ -12,6 +12,12 @@ class ValityMessagingModule extends NativeModule<ValityMessagingEvents> {
   async sendSms() {
     return false;
   }
+  async hasCallPermission() {
+    return false;
+  }
+  async placeCall() {
+    return false;
+  }
 }
 
 export default registerWebModule(ValityMessagingModule, "ValityMessagingModule");

@@ -51,6 +51,13 @@ const config: ExpoConfig = {
     ],
     "expo-task-manager",
     "expo-notifications",
+    [
+      "expo-contacts",
+      {
+        contactsPermission:
+          "Vality AI nutzt deine Kontakte, um Namen wie \"Ruf Max an\" in Telefonnummern zu übersetzen.",
+      },
+    ],
   ],
 };
 

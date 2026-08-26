@@ -1,42 +1,74 @@
 import ValityMessaging from "../../modules/vality-messaging/src/ValityMessagingModule";
 import { loadSettings } from "../storage/settings";
+import { findContactsByName } from "../features/contacts/lookup";
+import { postToServer } from "../api/client";
 
 // Verbindung zum selben WebSocket-Hub, den auch das PC-Dashboard nutzt.
-// Der PC schickt darueber "send_sms"-Befehle (Antwort auf einen per Sprache
-// diktierten Text), die das Handy direkt ausfuehrt. Erfordert, dass die App
+// Der PC schickt darueber Befehle (SMS-Antwort senden, Kontakt aufloesen,
+// Anruf starten), die das Handy direkt ausfuehrt. Erfordert, dass die App
 // im Vorder- oder Hintergrund laeuft - wird sie vom System vollstaendig
 // beendet, kommen keine Befehle mehr an (kein Push-Service angebunden).
 let socket: WebSocket | null = null;
 let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 let stopped = true;
 
-interface SendSmsCommand {
-  type: "send_sms";
-  to: string;
-  body: string;
+type Command =
+  | { type: "send_sms"; to: string; body: string }
+  | { type: "place_call"; to: string }
+  | { type: "resolve_contact"; requestId: string; name: string };
+
+function asCommand(msg: unknown): Command | null {
+  if (typeof msg !== "object" || msg === null) return null;
+  const m = msg as Record<string, unknown>;
+  if (m.type === "send_sms" && typeof m.to === "string" && typeof m.body === "string") {
+    return { type: "send_sms", to: m.to, body: m.body };
+  }
+  if (m.type === "place_call" && typeof m.to === "string") {
+    return { type: "place_call", to: m.to };
+  }
+  if (m.type === "resolve_contact" && typeof m.requestId === "string" && typeof m.name === "string") {
+    return { type: "resolve_contact", requestId: m.requestId, name: m.name };
+  }
+  return null;
 }
 
-function isSendSmsCommand(msg: unknown): msg is SendSmsCommand {
-  return (
-    typeof msg === "object" &&
-    msg !== null &&
-    (msg as Record<string, unknown>).type === "send_sms" &&
-    typeof (msg as Record<string, unknown>).to === "string" &&
-    typeof (msg as Record<string, unknown>).body === "string"
-  );
-}
-
-async function handleCommand(msg: unknown): Promise<void> {
-  if (!isSendSmsCommand(msg)) return;
+async function handleCommand(raw: unknown): Promise<void> {
+  const command = asCommand(raw);
+  if (!command) return;
   const settings = await loadSettings();
-  if (!settings.smsEnabled) {
-    console.warn("send_sms-Befehl erhalten, aber SMS-Feature ist auf dem Handy deaktiviert.");
+
+  if (command.type === "send_sms") {
+    if (!settings.smsEnabled) {
+      console.warn("send_sms-Befehl erhalten, aber SMS-Feature ist auf dem Handy deaktiviert.");
+      return;
+    }
+    try {
+      await ValityMessaging.sendSms(command.to, command.body);
+    } catch (err) {
+      console.warn("SMS-Versand fehlgeschlagen:", err);
+    }
     return;
   }
-  try {
-    await ValityMessaging.sendSms(msg.to, msg.body);
-  } catch (err) {
-    console.warn("SMS-Versand fehlgeschlagen:", err);
+
+  if (command.type === "place_call") {
+    try {
+      await ValityMessaging.placeCall(command.to);
+    } catch (err) {
+      console.warn("Anruf fehlgeschlagen:", err);
+    }
+    return;
+  }
+
+  if (command.type === "resolve_contact") {
+    try {
+      const matches = await findContactsByName(command.name);
+      await postToServer("/api/contacts/resolve", { requestId: command.requestId, matches });
+    } catch (err) {
+      console.warn("Kontakt-Aufloesung fehlgeschlagen:", err);
+      // Trotzdem eine leere Antwort schicken, damit der Server nicht bis
+      // zum Timeout wartet.
+      await postToServer("/api/contacts/resolve", { requestId: command.requestId, matches: [] }).catch(() => {});
+    }
   }
 }
 

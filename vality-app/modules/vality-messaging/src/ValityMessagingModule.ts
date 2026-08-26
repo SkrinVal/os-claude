@@ -11,6 +11,9 @@ declare class ValityMessagingModule extends NativeModule<ValityMessagingEvents> 
   isNotificationAccessGranted(): Promise<boolean>;
   openNotificationAccessSettings(): void;
   sendSms(phoneNumber: string, message: string): Promise<boolean>;
+  hasCallPermission(): Promise<boolean>;
+  /** true = wirklich angerufen (ACTION_CALL), false = nur Waehl-Bildschirm geoeffnet (ACTION_DIAL). */
+  placeCall(phoneNumber: string): Promise<boolean>;
 }
 
 export default requireNativeModule<ValityMessagingModule>("ValityMessaging");

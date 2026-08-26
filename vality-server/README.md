@@ -77,9 +77,8 @@ node -e "require('./dist/brain/claude').askClaude('Sag Hallo').then(console.log)
 }
 ```
 
-`memory`, `presence` und `messages` existieren. Nach einer Aenderung an
-der Datei den Server neu starten (kein Datei-Watcher, bewusst einfach
-gehalten).
+Alle vier Module existieren. Nach einer Aenderung an der Datei den Server
+neu starten (kein Datei-Watcher, bewusst einfach gehalten).
 
 ## Feature 1: Gedaechtnis
 
@@ -193,8 +192,8 @@ liest sie vor und kann diktierte SMS-Antworten tatsaechlich verschicken.
    Kurzverlauf, ohne Sprachausgabe).
 
 **Sprachbefehle** (per Mikro am PC, vor `claude -p` abgefangen, gelten
-immer fuer die zuletzt empfangene Nachricht - kein Namens-Lookup, das
-kommt mit Feature 4):
+immer fuer die zuletzt empfangene Nachricht - fuer eine Antwort an einen
+namentlich genannten Kontakt siehe Feature 4, „Schreib X, dass..."):
 
 - „Antworte, dass ich später komme" → bei SMS: fragt (wenn
   `MESSAGES_CONFIRM_BEFORE_SEND` nicht `false` ist) erst nach, sonst
@@ -232,13 +231,75 @@ Isolierter Logiktest ohne Server:
 node -e "
 const { addMessage } = require('./dist/messages/store');
 const { handleMessageCommand } = require('./dist/messages/commands');
+const { handleConfirmCommand } = require('./dist/shared/confirmCommands');
 (async () => {
   addMessage({ source: 'sms', sender: '+491701234567', body: 'Kommst du noch?', ts: new Date().toISOString() });
   console.log(await handleMessageCommand('Antworte, dass ich in 10 Minuten da bin'));
-  console.log(await handleMessageCommand('Ja, senden'));
+  console.log(await handleConfirmCommand('Ja, senden'));
 })();
 "
 ```
+
+## Feature 4: Anrufe & Kurznachrichten per Sprachbefehl
+
+Baut auf Feature 3 auf. Loest Kontaktnamen ueber die Handy-App auf (echte
+Kontakte, `expo-contacts`) statt sich nur auf „die letzte Nachricht" zu
+beziehen.
+
+**Ablauf einer Namensaufloesung**: Server broadcastet `{ type:
+"resolve_contact", requestId, name }` per WebSocket ans Handy → Handy
+durchsucht seine Kontakte, schickt `POST /api/contacts/resolve` mit den
+Treffern zurueck → Server wartet darauf bis zu `CALLS_CONTACT_RESOLVE_TIMEOUT_MS`
+(Default 6s). Kein verbundenes Handy oder Timeout = „nicht gefunden", nicht
+„niemand mit dem Namen existiert" - der Unterschied steht auch so in der
+Antwort, um nichts vorzutaeuschen.
+
+**Sprachbefehle**:
+
+- „Ruf Max an" → loest „Max" auf. Genau ein Treffer + `CALLS_CONFIRM_BEFORE_CALL`
+  nicht `false` → Rueckfrage „Soll ich Max Mustermann anrufen?“, dann „Ja"
+  oder „Abbrechen". Mehrere Treffer → Jarvis fragt nach einem genaueren
+  Namen, rät nicht.
+- „Schreib Max, dass ich später komme" → wie „Antworte...", nur mit
+  Namensaufloesung statt „letzte Nachricht". Nur fuer SMS - fuer WhatsApp
+  gibt es keine Sende-API (wie bei Feature 3).
+- „Ja" / „Abbrechen" bestaetigen bzw. verwerfen sowohl wartende Anrufe als
+  auch wartende SMS-Antworten (ein gemeinsamer Bestaetigungs-Mechanismus,
+  siehe `src/shared/`).
+
+Die eigentliche Sicherheitsgrenze liegt auf dem Handy: ohne die
+`CALL_PHONE`-Berechtigung oeffnet ein Anruf-Befehl dort nur die Waehl-App
+mit vorausgefuellter Nummer, es wird nie automatisch angerufen. Details in
+`vality-app/README.md`.
+
+`calls: true` in `config/features.json`.
+
+### Testen
+
+Ohne Handy, Kontakt-Antwort von Hand simulieren:
+
+```bash
+node -e "
+const hub = require('./dist/ws/hub');
+const orig = hub.broadcast;
+hub.broadcast = (event) => {
+  orig(event);
+  if (event.type === 'resolve_contact') {
+    require('./dist/contacts/resolve').deliverContactResolution(event.requestId, [
+      { name: 'Max Mustermann', phoneNumber: '+491701112233' },
+    ]);
+  }
+};
+const { handleCallCommand } = require('./dist/calls/commands');
+const { handleConfirmCommand } = require('./dist/shared/confirmCommands');
+(async () => {
+  console.log(await handleCallCommand('Ruf Max an'));
+  console.log(await handleConfirmCommand('Ja'));
+})();
+"
+```
+
+Voller Test mit echtem Handy: siehe `vality-app/README.md`.
 
 ## Produktions-Build
 
@@ -269,8 +330,16 @@ vality-server/
     messages/         Feature 3: Nachrichten
       store.ts        Kurzverlauf (nur im Speicher, siehe vality-app/README.md)
       reactions.ts    Vorlesen eingehender Nachrichten
-      commands.ts     "Antworte..."/"Ja, senden"/"Abbrechen"
-    routes/           Express-Routen (/api/voice, /api/status, /api/history, /api/presence, /api/messages)
+      commands.ts     "Antworte, dass..." (letzte Nachricht)
+    calls/            Feature 4: Anrufe & Kontakte
+      commands.ts     "Ruf X an" / "Schreib X, dass..." (mit Namensaufloesung)
+    contacts/
+      resolve.ts      Kontakt-Anfrage/-Antwort per WebSocket ans Handy
+    shared/
+      pendingAction.ts    Ein Bestaetigungs-Platz fuer SMS und Anrufe
+      confirmCommands.ts  "Ja"/"Abbrechen" fuer beides
+    routes/           Express-Routen (/api/voice, /api/status, /api/history,
+                      /api/presence, /api/messages, /api/contacts/resolve)
     ws/hub.ts         WebSocket-Broadcast fuer das Dashboard
     util/history.ts   In-Memory-Verlauf der letzten Interaktionen (Dashboard-Anzeige)
     index.ts          Server-Einstiegspunkt
@@ -282,8 +351,9 @@ vality-server/
 
 ## Geplante Ausbaustufen
 
-- Feature 4: Anrufe & Kurznachrichten per Sprachbefehl (mit Kontakt-
-  Namensaufloesung, Bestaetigung vor dem Senden/Anrufen)
+Alle vier urspruenglich geplanten Features (Gedaechtnis, Anwesenheit,
+Nachrichten, Anrufe) sind gebaut. Weiteres, noch nicht begonnen:
+
 - Code-/Datei-Steuerung ueber die Claude Code CLI selbst
 - System-Steuerung (Apps oeffnen, Lautstaerke)
 - Timer & Erinnerungen mit proaktiver Sprachausgabe (node-cron)

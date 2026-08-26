@@ -14,6 +14,8 @@ import { handleMemoryCommand } from "../memory/commands";
 import { buildPromptContext } from "../memory/context";
 import { recordConversationTurn } from "../memory/store";
 import { handleMessageCommand } from "../messages/commands";
+import { handleCallCommand } from "../calls/commands";
+import { handleConfirmCommand } from "../shared/confirmCommands";
 
 export const voiceRouter = Router();
 
@@ -36,12 +38,24 @@ voiceRouter.post("/voice", upload.single("audio"), async (req, res) => {
       return;
     }
 
-    const messageResult = features.messages ? await handleMessageCommand(transcript) : null;
-    const memoryResult = !messageResult && features.memory ? await handleMemoryCommand(transcript) : null;
+    const confirmResult =
+      features.messages || features.calls ? await handleConfirmCommand(transcript) : null;
+    const messageResult =
+      !confirmResult && features.messages ? await handleMessageCommand(transcript) : null;
+    const callResult =
+      !confirmResult && !messageResult && features.calls ? await handleCallCommand(transcript) : null;
+    const memoryResult =
+      !confirmResult && !messageResult && !callResult && features.memory
+        ? await handleMemoryCommand(transcript)
+        : null;
 
     let reply: string;
-    if (messageResult) {
+    if (confirmResult) {
+      reply = confirmResult.reply;
+    } else if (messageResult) {
       reply = messageResult.reply;
+    } else if (callResult) {
+      reply = callResult.reply;
     } else if (memoryResult) {
       reply = memoryResult.reply;
     } else if (features.memory) {

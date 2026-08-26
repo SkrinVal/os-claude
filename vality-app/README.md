@@ -2,25 +2,26 @@
 
 Handy-Client fuer das Vality-AI-System. Spricht mit dem PC-Server
 (`vality-server/`) im selben lokalen Netz. Enthaelt Feature 2
-(Anwesenheitserkennung) und Feature 3 (Nachrichten vorlesen/diktieren) -
-siehe `vality-server/README.md` fuer den Gesamtzustand.
+(Anwesenheitserkennung), Feature 3 (Nachrichten vorlesen/diktieren) und
+Feature 4 (Anrufe & Kontakte per Sprachbefehl) - siehe
+`vality-server/README.md` fuer den Gesamtzustand.
 
-Die App ist jetzt **ein** Dashboard-Screen mit mehreren Panels
-(Server-Verbindung, Anwesenheit, Nachrichten), im selben visuellen Stil
-wie das PC-Dashboard (dunkel, Teal-Akzent, Eckenklammern) - nicht mehr
-mehrere getrennte Screens.
+Die App ist **ein** Dashboard-Screen mit mehreren Panels
+(Server-Verbindung, Anwesenheit, Nachrichten, Anrufe & Kontakte), im
+selben visuellen Stil wie das PC-Dashboard (dunkel, Teal-Akzent,
+Eckenklammern) - nicht mehrere getrennte Screens.
 
-## Wichtiger Hinweis zum nativen Code (Feature 3)
+## Wichtiger Hinweis zum nativen Code (Feature 3 + 4)
 
-`modules/vality-messaging/` enthaelt selbst geschriebenen natives
-Android-Kotlin-Code (NotificationListenerService fuer WhatsApp-Vorschauen,
-SMS-Empfang/-Versand). Er ist gegen die tatsaechlich installierten SDK-57-
-Typen geschrieben und die Modul-Registrierung/Autolinking wurde mit
-`expo prebuild` + der Autolinking-Auflösung verifiziert - aber in dieser
-Umgebung stand kein Android SDK zur Verfuegung, der Kotlin-Code selbst
-konnte nicht kompiliert werden. Der erste `eas build`/`expo run:android`
-ist der echte Test. Wenn der Build fehlschlaegt, ist das der Ort zum
-Nachschauen.
+`modules/vality-messaging/` enthaelt selbst geschriebenen nativen
+Android-Kotlin-Code: NotificationListenerService fuer WhatsApp-Vorschauen,
+SMS-Empfang/-Versand, sowie Anruf-Ausloesung (`ACTION_CALL`/`ACTION_DIAL`).
+Er ist gegen die tatsaechlich installierten SDK-57-Typen geschrieben und
+die Modul-Registrierung/Autolinking wurde mit `expo prebuild` + der
+Autolinking-Auflösung verifiziert - aber in dieser Umgebung stand kein
+Android SDK zur Verfuegung, der Kotlin-Code selbst konnte nicht kompiliert
+werden. Der erste `eas build`/`expo run:android` ist der echte Test. Wenn
+der Build fehlschlaegt, ist das der Ort zum Nachschauen.
 
 ## Wichtig: kein Expo Go
 
@@ -61,18 +62,19 @@ neu gebaut werden (`eas build` bzw. `expo run:android`) - reines
 braucht. Reine JS/TSX-Aenderungen (Screens, Einstellungen) laufen dagegen
 ganz normal per Fast-Refresh im schon gebauten Dev-Client.
 
-## Wichtig: Play-Store-Richtlinien (Feature 3)
+## Wichtig: Play-Store-Richtlinien (Feature 3 + 4)
 
-Google behandelt `READ_SMS`/`RECEIVE_SMS`/`SEND_SMS` und
-Benachrichtigungszugriff als "sensible Berechtigungen" - eine App, die
-diese nutzt, OHNE die Standard-SMS- oder Anrufer-App des Geraets zu sein,
-wird im Play Store in aller Regel abgelehnt oder verlangt eine gesonderte
-Begruendung/Pruefung im Play Console. Fuer dieses Projekt ist das
-unkritisch, weil es **nicht** ueber den Play Store verteilt wird - EAS baut
-mit `distribution: "internal"` (siehe `eas.json`), die APK wird direkt
-installiert. Nur relevant, falls die App irgendwann doch veroeffentlicht
-werden soll: dann muesste dieser Teil raus oder die App muesste sich beim
-Play-Console-Deklarationsformular als "Standard-SMS-Handler" bewerben.
+Google behandelt `READ_SMS`/`RECEIVE_SMS`/`SEND_SMS`, `CALL_PHONE`,
+Kontaktzugriff und Benachrichtigungszugriff als "sensible Berechtigungen" -
+eine App, die diese nutzt, OHNE die Standard-SMS- oder Anrufer-App des
+Geraets zu sein, wird im Play Store in aller Regel abgelehnt oder verlangt
+eine gesonderte Begruendung/Pruefung im Play Console. Fuer dieses Projekt
+ist das unkritisch, weil es **nicht** ueber den Play Store verteilt wird -
+EAS baut mit `distribution: "internal"` (siehe `eas.json`), die APK wird
+direkt installiert. Nur relevant, falls die App irgendwann doch
+veroeffentlicht werden soll: dann muessten diese Teile raus oder die App
+muesste sich beim Play-Console-Deklarationsformular als
+"Standard-SMS-Handler" bewerben.
 
 ## Installation
 
@@ -83,7 +85,7 @@ npm install
 
 ## Einstellungen in der App
 
-Ein Dashboard-Screen mit drei Panels:
+Ein Dashboard-Screen mit vier Panels:
 
 **Server-Verbindung** (zuerst ausfuellen, gilt fuer alle Features):
 1. **Server-URL**: die lokale IP deines PCs mit Port, z.B.
@@ -105,6 +107,14 @@ Ein Dashboard-Screen mit drei Panels:
    zugriff (Android-Einstellungen, kein normaler Dialog, siehe unten).
 7. Schalter "SMS lesen & senden" → fragt die drei SMS-Laufzeit-
    Berechtigungen ab (normaler Dialog).
+
+**Anrufe & Kontakte**:
+8. "Kontaktzugriff" → "Anfragen" tippen, normaler Berechtigungs-Dialog.
+   Ohne das kann kein Name in eine Telefonnummer uebersetzt werden.
+9. "Direkt anrufen (ohne Wähl-Bildschirm)" → optional. Ohne diese
+   Berechtigung funktionieren Anruf-Befehle trotzdem, oeffnen aber nur die
+   Waehl-App - du musst noch selbst auf "Anrufen" tippen. Absichtlich als
+   zusaetzliches Sicherheitsnetz so gebaut, kein Muss.
 
 ## Android-Berechtigungen, die du manuell bestätigen musst
 
@@ -139,6 +149,16 @@ Fuer Feature 3 zusaetzlich:
 7. Genau wie bei Feature 2: Akku-Optimierung fuer die App deaktivieren,
    sonst stellt Android den NotificationListenerService nach einiger Zeit
    im Hintergrund ein.
+
+Fuer Feature 4 zusaetzlich:
+
+8. **Kontakte lesen**: normaler Berechtigungs-Dialog beim Tippen auf
+   "Anfragen" im Panel "Anrufe & Kontakte".
+9. **Telefonanrufe tätigen** (`CALL_PHONE`, optional): normaler
+   Berechtigungs-Dialog. Bewusst NICHT automatisch mitbeantragt, wenn du
+   nur SMS/WhatsApp nutzt - separates Opt-in, weil es die staerkste
+   Berechtigung im ganzen Projekt ist (loest echte Anrufe ohne
+   Wähl-Bildschirm aus).
 
 ## Testen
 
@@ -194,6 +214,25 @@ Fuer Feature 3 zusaetzlich:
    zu pruefen (der tatsaechliche Versand passiert dann trotzdem uebers
    Handy, das muss also verbunden und per WebSocket erreichbar sein).
 
+### Feature 4 testen
+
+1. Server: `calls: true` in `config/features.json`.
+2. In der App: Kontaktzugriff erlauben. `CALL_PHONE` erstmal NICHT
+   erlauben, um zuerst den sicheren Fallback zu testen.
+3. Einen Testkontakt mit deinem eigenen Namen (oder einem, den du
+   erkennst) in den Handy-Kontakten anlegen/nutzen.
+4. Am PC-Mikro: "Ruf &lt;Kontaktname&gt; an." → PC sollte fragen "Soll ich
+   ... anrufen?", dann "Ja" sagen → auf dem Handy sollte sich die
+   Waehl-App mit der Nummer oeffnen (nicht automatisch anrufen, das ist
+   der erwartete sichere Fallback ohne `CALL_PHONE`).
+5. Jetzt `CALL_PHONE` in der App erlauben, Schritt 4 wiederholen → sollte
+   diesmal direkt anrufen, ohne Waehl-Bildschirm.
+6. "Schreib &lt;Kontaktname&gt;, dass ich später komme" testen, analog zu
+   Feature 3s "Antworte...", nur mit Namen statt "letzte Nachricht".
+7. Mehrdeutigkeit testen: zwei Kontakte mit aehnlichem Namen anlegen,
+   denselben Namen per Sprache nennen → Jarvis sollte nach einem
+   genaueren Namen fragen, nicht selbst waehlen.
+
 ## Bekannte Grenzen
 
 - iOS-Geofencing ist in diesem Setup nicht getestet (Android stand hier
@@ -210,11 +249,20 @@ Fuer Feature 3 zusaetzlich:
   Benachrichtigung). Das ist eine harte technische Grenze, keine
   Fleissaufgabe fuer spaeter - es gibt keine offizielle API dafuer.
 - "Antworte, dass..." bezieht sich immer auf die zuletzt empfangene
-  Nachricht, nicht auf einen namentlich genannten Kontakt (das kommt mit
-  der Kontakt-Aufloesung in Feature 4).
-- Der `send_sms`-Befehl vom PC ans Handy laeuft ueber die offene
-  WebSocket-Verbindung der App - ist die App vollstaendig beendet (nicht
-  nur im Hintergrund), kommt der Befehl nicht an. Kein Push-Service
-  angebunden, der das umgehen wuerde.
+  Nachricht. Fuer eine Antwort an einen namentlich genannten Kontakt:
+  "Schreib X, dass..." (Feature 4).
+- Alle Befehle vom PC ans Handy (`send_sms`, `place_call`,
+  `resolve_contact`) laufen ueber dieselbe offene WebSocket-Verbindung der
+  App - ist die App vollstaendig beendet (nicht nur im Hintergrund), kommt
+  nichts mehr an. Kein Push-Service angebunden, der das umgehen wuerde.
 - Nachrichtenverlauf auf dem Server ist nur im Arbeitsspeicher (letzte 50),
   nicht persistiert - ein Server-Neustart loescht ihn.
+- Kontakt-Suche ist ein einfacher Namens-Abgleich (kein Fuzzy-Match,
+  keine Tippfehler-Toleranz) - "Ruf Max an" findet nur Kontakte, deren
+  Name "Max" tatsaechlich enthaelt.
+- "Schreib X, dass Y" verlangt zwingend das Wort "dass" als Trenner
+  zwischen Name und Nachricht (einfaches Pattern-Matching, keine echte
+  Sprachverarbeitung, wie schon bei Feature 1 und 3).
+- Bei mehreren Treffern fragt Jarvis nach einem genaueren Namen, bietet
+  aber keine nummerierte Auswahl ("1, 2, 3") an - bewusste Vereinfachung,
+  um fragiles Zahlwort-Parsing zu vermeiden.

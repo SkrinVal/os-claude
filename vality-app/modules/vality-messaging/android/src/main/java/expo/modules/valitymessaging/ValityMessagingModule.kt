@@ -1,7 +1,10 @@
 package expo.modules.valitymessaging
 
+import android.Manifest
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.provider.Settings
 import android.telephony.SmsManager
@@ -59,6 +62,24 @@ class ValityMessagingModule : Module() {
       manager.sendMultipartTextMessage(phoneNumber, null, parts, null, null)
       true
     }
+
+    AsyncFunction("hasCallPermission") {
+      hasCallPermission(requireContext())
+    }
+
+    // Ruft nur direkt an (ACTION_CALL), wenn CALL_PHONE bereits erteilt
+    // wurde. Sonst faellt es auf den Waehl-Bildschirm zurueck (ACTION_DIAL,
+    // braucht keine Berechtigung) - der Nutzer muss dann selbst auf
+    // "Anrufen" tippen. Das ist ein zusaetzliches Sicherheitsnetz, kein Bug:
+    // ohne CALL_PHONE gibt es nie einen wirklich automatischen Anruf.
+    AsyncFunction("placeCall") { phoneNumber: String ->
+      val context = requireContext()
+      val action = if (hasCallPermission(context)) Intent.ACTION_CALL else Intent.ACTION_DIAL
+      val intent = Intent(action, Uri.parse("tel:$phoneNumber"))
+        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+      context.startActivity(intent)
+      action == Intent.ACTION_CALL
+    }
   }
 
   private fun requireContext(): Context =
@@ -88,5 +109,8 @@ class ValityMessagingModule : Module() {
         ?: return false
       return flat.split(":").any { it.contains(pkgName) }
     }
+
+    private fun hasCallPermission(context: Context): Boolean =
+      context.checkSelfPermission(Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED
   }
 }

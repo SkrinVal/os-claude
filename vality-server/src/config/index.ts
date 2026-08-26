@@ -61,6 +61,14 @@ export const config = {
     confirmBeforeSend: (process.env.MESSAGES_CONFIRM_BEFORE_SEND ?? "true") !== "false",
   },
 
+  calls: {
+    // Vor dem tatsaechlichen Anruf per Sprache bestaetigen lassen ("Ja").
+    confirmBeforeCall: (process.env.CALLS_CONFIRM_BEFORE_CALL ?? "true") !== "false",
+    // Wie lange auf die Kontakt-Antwort des Handys gewartet wird, bevor
+    // "Handy nicht erreichbar" statt eines Treffers zurueckkommt.
+    contactResolveTimeoutMs: Number(process.env.CALLS_CONTACT_RESOLVE_TIMEOUT_MS ?? 6000),
+  },
+
   dataDir: path.resolve(__dirname, "..", "..", "data"),
   tmpDir: path.resolve(__dirname, "..", "..", "data", "tmp"),
   audioOutDir: path.resolve(__dirname, "..", "..", "data", "audio-out"),
