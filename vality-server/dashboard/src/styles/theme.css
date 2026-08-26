@@ -1,8 +1,7 @@
 /*
-  Palette "Amber" - siehe Farbvorschlag in der Aufgabenstellung.
-  Bewusst kein Cyan, um sich von der ueblichen HUD-Referenz abzusetzen.
-  Alle Werte als CSS-Variablen, damit ein Palettenwechsel spaeter nur
-  hier passiert statt verstreut in Komponenten.
+  Palette "Cyan" - auf Wunsch umgestellt von der urspruenglichen
+  Amber-Palette. Nur diese Werte anfassen, um die Akzentfarbe zu aendern -
+  Komponenten nutzen ausschliesslich diese Variablen.
 */
 :root {
   --bg: #0a0e14;
@@ -11,10 +10,10 @@
   --line: #1c2530;
   --line-bright: #2a3644;
 
-  --accent: #ff9d3d;
-  --accent-dim: #8a5220;
-  --accent-soft: rgba(255, 157, 61, 0.12);
-  --accent-rgb: 255, 157, 61;
+  --accent: #22d3ee;
+  --accent-dim: #0e6d80;
+  --accent-soft: rgba(34, 211, 238, 0.12);
+  --accent-rgb: 34, 211, 238;
 
   --text: #eef0f4;
   --text-dim: #8890a0;
