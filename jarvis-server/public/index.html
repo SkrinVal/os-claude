@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>JARVIS // Terminal</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<div class="scanlines"></div>
+
+<header class="topbar">
+  <div class="brand"><span class="brand-dot"></span>J.A.R.V.I.S.</div>
+  <div class="conn" id="connStatus" data-state="down">LINK <span></span></div>
+</header>
+
+<main class="grid">
+
+  <section class="panel panel-core">
+    <div class="corner tl"></div><div class="corner tr"></div>
+    <div class="corner bl"></div><div class="corner br"></div>
+
+    <div class="core-wrap">
+      <svg class="core-ring" viewBox="0 0 200 200">
+        <circle class="ring ring-outer" cx="100" cy="100" r="92" />
+        <circle class="ring ring-mid" cx="100" cy="100" r="74" />
+        <circle class="ring ring-inner" cx="100" cy="100" r="54" />
+      </svg>
+      <button id="pttButton" class="ptt-core" aria-label="Push to talk">
+        <span id="coreLabel">HALTEN<br />ZUM SPRECHEN</span>
+      </button>
+    </div>
+
+    <div class="mic-status" id="micStatus" data-state="idle">BEREIT</div>
+  </section>
+
+  <section class="panel panel-log">
+    <div class="corner tl"></div><div class="corner tr"></div>
+    <div class="corner bl"></div><div class="corner br"></div>
+    <h2>LOGBUCH</h2>
+    <div id="logList" class="log-list">
+      <p class="empty">Noch keine Interaktionen.</p>
+    </div>
+  </section>
+
+  <section class="panel panel-stats">
+    <div class="corner tl"></div><div class="corner tr"></div>
+    <div class="corner bl"></div><div class="corner br"></div>
+    <h2>SYSTEM</h2>
+    <dl class="stats">
+      <div><dt>Host</dt><dd id="statHost">—</dd></div>
+      <div><dt>Uptime</dt><dd id="statUptime">—</dd></div>
+      <div><dt>CPU Kerne</dt><dd id="statCpu">—</dd></div>
+      <div><dt>Load (1m)</dt><dd id="statLoad">—</dd></div>
+      <div><dt>Speicher</dt><dd id="statMem">—</dd></div>
+    </dl>
+  </section>
+
+</main>
+
+<audio id="replyAudio" hidden></audio>
+
+<script src="app.js"></script>
+</body>
+</html>

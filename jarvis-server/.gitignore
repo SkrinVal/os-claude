@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.env
+data/tmp/*
+data/audio-out/*
+!data/tmp/.gitkeep
+!data/audio-out/.gitkeep
+*.log
