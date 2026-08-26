@@ -1,6 +1,6 @@
 import type { WebSocket, WebSocketServer } from "ws";
 
-export type JarvisEvent =
+export type ValityEvent =
   | { type: "mic_status"; listening: boolean }
   | { type: "interaction"; id: string; transcript: string; reply: string; ts: string }
   | { type: "error"; message: string; ts: string };
@@ -16,7 +16,7 @@ export function attachWebSocketServer(server: WebSocketServer): void {
   });
 }
 
-export function broadcast(event: JarvisEvent): void {
+export function broadcast(event: ValityEvent): void {
   const payload = JSON.stringify(event);
   for (const client of clients) {
     if (client.readyState === client.OPEN) {

@@ -1,7 +1,7 @@
 {
-  "name": "jarvis-server",
+  "name": "vality-server",
   "version": "0.1.0",
-  "description": "Jarvis Brain-Server: nimmt Sprache entgegen, ruft Whisper (STT), Claude Code CLI (Antwort) und Piper (TTS) auf, bedient ein Web-Dashboard.",
+  "description": "Vality AI Brain-Server: nimmt Sprache entgegen, ruft Whisper (STT), Claude Code CLI (Antwort) und Piper (TTS) auf, bedient ein Web-Dashboard.",
   "private": true,
   "type": "commonjs",
   "main": "dist/index.js",

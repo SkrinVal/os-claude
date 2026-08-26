@@ -1,6 +1,6 @@
-# Jarvis-Server
+# Vality-Server
 
-PC-"Brain" fuer das Jarvis-Sprachassistenz-System. Nimmt Sprache per
+PC-"Brain" fuer das Vality AI Sprachassistenz-System. Nimmt Sprache per
 Push-to-Talk entgegen, transkribiert lokal mit whisper.cpp, schickt den Text
 an die Claude Code CLI (`claude -p`) und liest die Antwort per Piper (lokal,
 offline) vor. Ein Web-Dashboard im Sci-Fi-HUD-Stil zeigt Mikrofon-Status,
@@ -27,7 +27,7 @@ es gibt keine Cloud-Abhaengigkeit fuer STT/TTS.
 ## Installation
 
 ```bash
-cd jarvis-server
+cd vality-server
 npm install
 cp .env.example .env
 ```
@@ -74,7 +74,7 @@ npm start
 ## Projektstruktur
 
 ```
-jarvis-server/
+vality-server/
   src/
     config/       Umgebungsvariablen, Pfade
     stt/whisper.ts    whisper.cpp Aufruf (Speech-to-Text)

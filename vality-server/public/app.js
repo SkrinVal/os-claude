@@ -38,7 +38,7 @@ function renderEntry(entry) {
   el.innerHTML = `
     <div class="ts">${time}</div>
     <div class="you">DU: ${escapeHtml(entry.transcript)}</div>
-    <div class="reply">JARVIS: ${escapeHtml(entry.reply)}</div>
+    <div class="reply">VALITY: ${escapeHtml(entry.reply)}</div>
   `;
   logList.prepend(el);
 }

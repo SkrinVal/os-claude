@@ -31,12 +31,12 @@ async function main(): Promise<void> {
   attachWebSocketServer(wss);
 
   server.listen(config.port, config.host, () => {
-    console.log(`Jarvis-Server laeuft auf http://${config.host}:${config.port}`);
+    console.log(`Vality-Server laeuft auf http://${config.host}:${config.port}`);
     console.log(`Dashboard: http://localhost:${config.port}`);
   });
 }
 
 main().catch((err) => {
-  console.error("Jarvis-Server konnte nicht gestartet werden:", err);
+  console.error("Vality-Server konnte nicht gestartet werden:", err);
   process.exit(1);
 });
