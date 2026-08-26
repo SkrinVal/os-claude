@@ -64,6 +64,84 @@ node -e "require('./dist/brain/claude').askClaude('Sag Hallo').then(console.log)
 ```
 (erst `npm run build` ausfuehren, damit `dist/` existiert.)
 
+## Feature-Flags
+
+`config/features.json` schaltet Module unabhaengig voneinander an/aus:
+
+```json
+{
+  "memory": true,
+  "presence": false,
+  "messages": false,
+  "calls": false
+}
+```
+
+Nur `memory` existiert bisher. Nach einer Aenderung an der Datei den Server
+neu starten (kein Datei-Watcher, bewusst einfach gehalten).
+
+## Feature 1: Gedaechtnis
+
+Lokales Gedaechtnis in JSON-Dateien unter `data/memory/` (keine Cloud-DB,
+keine native Abhaengigkeit wie SQLite, damit `npm install` auf Windows ohne
+Compiler durchlaeuft):
+
+- `facts.json` — explizite Fakten (`{ id, category, content, source,
+  createdAt, lastReferencedAt, referenceCount, status, staleSince? }`)
+- `conversations.json` — die letzten Interaktionen als Kurzzeit-Gedaechtnis
+  (`{ id, transcript, reply, ts }`), auf `MEMORY_MAX_CONVERSATION_TURNS`
+  begrenzt
+
+**Befehle** (per Sprache, vor dem eigentlichen `claude -p` abgefangen):
+
+- „Merk dir, dass ich Vegetarier bin" → legt einen Fakt an, Kategorie
+  aktuell immer `allgemein` (keine geratene Kategorisierung)
+- „Was weißt du über Vegetarier" → durchsucht aktive Fakten nach Stichwort
+- „Vergiss Vegetarier" → loescht den ersten passenden Fakt vollstaendig
+
+Jeder normale `claude -p` Aufruf bekommt automatisch einen Kontext-Block
+vorangestellt: `Bekannte Fakten über den Nutzer: ...` plus die letzten
+`MEMORY_CONTEXT_CONVERSATION_TURNS` Interaktionen.
+
+**Aufraeumen**: Fakten, die laenger als `MEMORY_STALE_AFTER_MONTHS` (Default
+6) nicht referenziert wurden, werden beim Start und danach einmal taeglich
+als `status: "stale"` markiert — nicht geloescht. Stale Fakten fliessen
+nicht mehr in den Prompt-Kontext oder in „Was weißt du über X" ein, bleiben
+aber in `facts.json` einsehbar. „Vergiss X" ist die einzige echte Loeschung.
+
+### Testen
+
+1. `npm run build && npm run dev`, Dashboard oeffnen.
+2. Sprechen: „Merk dir, dass ich Vegetarier bin." → Antwort sollte
+   „Gemerkt: ..." sein, `data/memory/facts.json` sollte einen neuen Eintrag
+   haben.
+3. Sprechen: „Was weißt du über Vegetarier" → sollte den Fakt zurueckgeben.
+4. Eine unabhaengige Frage stellen (z.B. „Wie spät ist es") und pruefen,
+   ob `data/memory/conversations.json` einen neuen Eintrag bekommen hat.
+5. Sprechen: „Vergiss Vegetarier" → Fakt sollte aus `facts.json`
+   verschwinden.
+6. Ohne Browser, isolierter Test der reinen Logik:
+   ```bash
+   node -e "
+   const { loadMemory } = require('./dist/memory/store');
+   const { handleMemoryCommand } = require('./dist/memory/commands');
+   (async () => {
+     await loadMemory();
+     console.log(await handleMemoryCommand('Merk dir, dass ich Vegetarier bin'));
+     console.log(await handleMemoryCommand('Was weißt du über Vegetarier'));
+   })();
+   "
+   ```
+7. Feature abschalten: `memory: false` in `config/features.json`, Server
+   neu starten → keine Kontext-Injection mehr, Befehle wie „Merk dir..."
+   werden dann ganz normal als Frage an Claude weitergereicht.
+
+Bekannte Einschraenkung: Die Befehlserkennung ist einfaches Pattern-Matching,
+keine echte Sprachverarbeitung. Der gespeicherte Fakt ist der wortwoertlich
+transkribierte Nebensatz nach „dass"/„merk dir" — bei ungewoehnlichen
+Formulierungen kann das grammatikalisch holprig aussehen, inhaltlich bleibt
+es aber das, was gesagt wurde.
+
 ## Produktions-Build
 
 ```bash
@@ -75,23 +153,36 @@ npm start
 
 ```
 vality-server/
+  config/
+    features.json     Feature-Flags (memory/presence/messages/calls)
   src/
-    config/       Umgebungsvariablen, Pfade
+    config/       Umgebungsvariablen, Pfade, Feature-Flag-Loader
     stt/whisper.ts    whisper.cpp Aufruf (Speech-to-Text)
     brain/claude.ts   claude -p Aufruf (Antwort-Generierung)
     tts/piper.ts      Piper Aufruf (Text-to-Speech)
+    memory/           Feature 1: Gedaechtnis (siehe oben)
+      types.ts        Fact, ConversationTurn
+      store.ts        JSON-Persistenz (atomare Writes)
+      commands.ts     "Merk dir"/"Was weißt du über"/"Vergiss"
+      context.ts      Kontext-Block fuer claude -p
+      cleanup.ts       Stale-Sweep
     routes/           Express-Routen (/api/voice, /api/status, /api/history)
     ws/hub.ts         WebSocket-Broadcast fuer das Dashboard
-    util/history.ts   In-Memory-Verlauf der letzten Interaktionen
+    util/history.ts   In-Memory-Verlauf der letzten Interaktionen (Dashboard-Anzeige)
     index.ts          Server-Einstiegspunkt
   public/         Web-Dashboard (HTML/CSS/JS, Sci-Fi-HUD)
   data/tmp/       temporaere Audio-Uploads (wird geleert)
   data/audio-out/ erzeugte TTS-Antworten (wav)
+  data/memory/    facts.json, conversations.json (nicht im Git, siehe .gitignore)
 ```
 
-## Geplante Ausbaustufen (noch nicht umgesetzt)
+## Geplante Ausbaustufen
 
-- Handy-App (Expo/React Native) als Client fuer den Server
+- Feature 2: Anwesenheitserkennung (Standort-basiert) — braucht die
+  Handy-App, noch nicht gebaut
+- Feature 3: Nachrichten vorlesen & diktieren (SMS/WhatsApp) — braucht die
+  Handy-App und je nach Umfang ein Custom-Dev-Client statt Expo Go
+- Feature 4: Anrufe & Kurznachrichten per Sprachbefehl — wie Feature 3
 - Code-/Datei-Steuerung ueber die Claude Code CLI selbst
 - System-Steuerung (Apps oeffnen, Lautstaerke)
 - Timer & Erinnerungen mit proaktiver Sprachausgabe (node-cron)

@@ -1,0 +1,6 @@
+{
+  "memory": true,
+  "presence": false,
+  "messages": false,
+  "calls": false
+}

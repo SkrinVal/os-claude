@@ -3,6 +3,8 @@ dist/
 .env
 data/tmp/*
 data/audio-out/*
+data/memory/*
 !data/tmp/.gitkeep
 !data/audio-out/.gitkeep
+!data/memory/.gitkeep
 *.log

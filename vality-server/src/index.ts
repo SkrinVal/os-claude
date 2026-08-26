@@ -5,17 +5,33 @@ import path from "node:path";
 import { WebSocketServer } from "ws";
 import { promises as fs } from "node:fs";
 import { config } from "./config";
+import { features } from "./config/features";
 import { voiceRouter } from "./routes/voice";
 import { statusRouter } from "./routes/status";
 import { attachWebSocketServer } from "./ws/hub";
+import { loadMemory } from "./memory/store";
+import { sweepStaleFacts } from "./memory/cleanup";
 
 async function ensureDataDirs(): Promise<void> {
   await fs.mkdir(config.tmpDir, { recursive: true });
   await fs.mkdir(config.audioOutDir, { recursive: true });
 }
 
+const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+
 async function main(): Promise<void> {
   await ensureDataDirs();
+
+  if (features.memory) {
+    await loadMemory();
+    const staleCount = await sweepStaleFacts();
+    if (staleCount > 0) {
+      console.log(`Gedaechtnis: ${staleCount} Fakt(en) als veraltet markiert (nicht geloescht).`);
+    }
+    setInterval(() => {
+      sweepStaleFacts().catch((err) => console.error("Gedaechtnis-Sweep fehlgeschlagen:", err));
+    }, ONE_DAY_MS);
+  }
 
   const app = express();
   app.use(cors());

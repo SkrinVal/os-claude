@@ -4,11 +4,15 @@ import { randomUUID } from "node:crypto";
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { config } from "../config";
+import { features } from "../config/features";
 import { transcribeAudio } from "../stt/whisper";
 import { askClaude } from "../brain/claude";
 import { synthesizeSpeech } from "../tts/piper";
 import { addInteraction } from "../util/history";
 import { broadcast } from "../ws/hub";
+import { handleMemoryCommand } from "../memory/commands";
+import { buildPromptContext } from "../memory/context";
+import { recordConversationTurn } from "../memory/store";
 
 export const voiceRouter = Router();
 
@@ -31,7 +35,21 @@ voiceRouter.post("/voice", upload.single("audio"), async (req, res) => {
       return;
     }
 
-    const reply = await askClaude(transcript);
+    let reply: string;
+    if (features.memory) {
+      const memoryResult = await handleMemoryCommand(transcript);
+      if (memoryResult) {
+        reply = memoryResult.reply;
+      } else {
+        const contextBlock = await buildPromptContext();
+        const prompt = contextBlock ? `${contextBlock}Aktuelle Anfrage: ${transcript}` : transcript;
+        reply = await askClaude(prompt);
+      }
+      await recordConversationTurn(transcript, reply);
+    } else {
+      reply = await askClaude(transcript);
+    }
+
     const audioPath = await synthesizeSpeech(reply);
     const audioUrl = `/audio/${path.basename(audioPath)}`;
     const ts = new Date().toISOString();

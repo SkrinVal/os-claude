@@ -31,6 +31,19 @@ export const config = {
     modelConfig: process.env.PIPER_CONFIG,
   },
 
+  memory: {
+    // Wie viele Interaktionen insgesamt auf der Platte behalten werden.
+    maxConversationTurns: Number(process.env.MEMORY_MAX_CONVERSATION_TURNS ?? 200),
+    // Wie viele der letzten Interaktionen als Kurzzeit-Kontext in jeden
+    // claude -p Aufruf eingebaut werden.
+    contextConversationTurns: Number(process.env.MEMORY_CONTEXT_CONVERSATION_TURNS ?? 6),
+    // Wie viele Fakten hoechstens gleichzeitig in den Prompt-Kontext wandern.
+    contextFactsLimit: Number(process.env.MEMORY_CONTEXT_FACTS_LIMIT ?? 20),
+    // Fakten, die laenger als so viele Monate nicht mehr referenziert wurden,
+    // werden beim Sweep als "stale" markiert (nicht geloescht).
+    staleAfterMonths: Number(process.env.MEMORY_STALE_AFTER_MONTHS ?? 6),
+  },
+
   dataDir: path.resolve(__dirname, "..", "..", "data"),
   tmpDir: path.resolve(__dirname, "..", "..", "data", "tmp"),
   audioOutDir: path.resolve(__dirname, "..", "..", "data", "audio-out"),
