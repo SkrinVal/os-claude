@@ -44,7 +44,11 @@ export default function LogPanel({ delay }: { delay?: number }) {
               <div className="log-panel__ts mono" title={new Date(entry.ts).toLocaleString("de-DE")}>
                 {formatRelative(entry.ts, now)}
               </div>
-              <div className="log-panel__you">DU: {entry.transcript}</div>
+              {entry.transcript ? (
+                <div className="log-panel__you">DU: {entry.transcript}</div>
+              ) : (
+                <div className="log-panel__tag mono">BRIEFING</div>
+              )}
               <div className="log-panel__reply">VALITY: {entry.reply}</div>
             </motion.div>
           ))}

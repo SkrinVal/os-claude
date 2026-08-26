@@ -1,4 +1,5 @@
 import { broadcast } from "../ws/hub";
+import { buildCityBriefing } from "./cityBriefing";
 
 export interface HudCommandResult {
   reply: string;
@@ -76,7 +77,8 @@ export async function handleHudCommand(transcript: string): Promise<HudCommandRe
   const city = firstMatch(text, GLOBE_CITY_RES);
   if (city) {
     broadcast({ type: "ui_mode", mode: "globe", city });
-    return { reply: `Ich zeige dir ${city} auf dem Globus.` };
+    const reply = await buildCityBriefing(city);
+    return { reply };
   }
 
   return null;
