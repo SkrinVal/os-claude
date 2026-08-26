@@ -5,7 +5,7 @@ import "./QuickActionsPanel.css";
 
 // Nur echte, sofort wirksame Aktionen - keine Knoepfe, die auf ein noch
 // nicht existierendes Backend-Feature verweisen.
-export default function QuickActionsPanel() {
+export default function QuickActionsPanel({ delay }: { delay?: number }) {
   const { audioMuted } = useHudState();
   const dispatch = useHudDispatch();
   const [fullscreen, setFullscreen] = useState(false);
@@ -21,7 +21,7 @@ export default function QuickActionsPanel() {
   }
 
   return (
-    <HudFrame title="Schnellzugriff" className="quick-actions">
+    <HudFrame title="Schnellzugriff" className="quick-actions" delay={delay}>
       <button type="button" className="quick-actions__btn" onClick={toggleFullscreen}>
         <span>Vollbild</span>
         <span className="mono quick-actions__state">{fullscreen ? "AN" : "AUS"}</span>

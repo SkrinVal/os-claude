@@ -15,6 +15,11 @@
   --accent-soft: rgba(34, 211, 238, 0.12);
   --accent-rgb: 34, 211, 238;
 
+  /* Zweitakzent - nur fuer sehr sparsame Tiefe/Bloom-Akzente (Aurora-Hintergrund,
+     Ring-Glow), niemals fuer Text oder Interaktionsflaechen. */
+  --accent-2: #7c6cf0;
+  --accent-2-rgb: 124, 108, 240;
+
   --text: #eef0f4;
   --text-dim: #8890a0;
   --text-faint: #545e6e;
@@ -30,4 +35,11 @@
   --font-sans: "Inter", "Segoe UI", system-ui, sans-serif;
 
   --ease-hud: cubic-bezier(0.22, 0.9, 0.32, 1);
+
+  /* Glas-Panels: leicht angehobene, transluzente Flaeche mit Blur statt
+     einer flachen Vollton-Box. */
+  --glass-bg: linear-gradient(165deg, rgba(17, 23, 33, 0.72), rgba(9, 12, 18, 0.66));
+  --glass-border: rgba(var(--accent-rgb), 0.16);
+  --shadow-panel: 0 18px 40px -18px rgba(0, 0, 0, 0.65);
+  --shadow-panel-hover: 0 22px 50px -16px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(var(--accent-rgb), 0.1);
 }

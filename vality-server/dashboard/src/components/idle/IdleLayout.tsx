@@ -8,8 +8,8 @@ export default function IdleLayout() {
   return (
     <div className="idle-layout">
       <div className="idle-layout__aside idle-layout__aside--left">
-        <SystemPanel />
-        <QuickActionsPanel />
+        <SystemPanel delay={0.05} />
+        <QuickActionsPanel delay={0.14} />
       </div>
 
       <div className="idle-layout__core">
@@ -17,7 +17,7 @@ export default function IdleLayout() {
       </div>
 
       <div className="idle-layout__aside idle-layout__aside--right">
-        <LogPanel />
+        <LogPanel delay={0.1} />
       </div>
     </div>
   );

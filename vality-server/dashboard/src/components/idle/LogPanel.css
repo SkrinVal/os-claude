@@ -22,8 +22,24 @@
 }
 
 .log-panel__entry {
+  position: relative;
   border-left: 2px solid var(--accent-dim);
-  padding-left: 11px;
+  padding-left: 14px;
+  transition: border-color 0.2s ease;
+}
+.log-panel__entry::before {
+  content: "";
+  position: absolute;
+  left: -4.5px;
+  top: 2px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 6px rgba(var(--accent-rgb), 0.7);
+}
+.log-panel__entry:hover {
+  border-color: var(--accent);
 }
 
 .log-panel__ts {

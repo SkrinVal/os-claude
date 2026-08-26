@@ -13,11 +13,17 @@
   cursor: pointer;
   transition:
     border-color 0.2s,
-    background 0.2s;
+    background 0.2s,
+    box-shadow 0.2s,
+    transform 0.15s var(--ease-hud);
 }
 .quick-actions__btn:hover {
   border-color: var(--accent-dim);
   background: var(--accent-soft);
+  box-shadow: 0 0 0 1px rgba(var(--accent-rgb), 0.08), 0 8px 20px -10px rgba(var(--accent-rgb), 0.4);
+}
+.quick-actions__btn:active {
+  transform: scale(0.985);
 }
 .quick-actions__btn:focus-visible {
   outline: 2px solid var(--accent);

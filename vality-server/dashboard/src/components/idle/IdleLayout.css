@@ -33,12 +33,20 @@
   .idle-layout {
     grid-template-columns: 1fr;
     grid-auto-rows: auto;
+    height: auto;
     overflow-y: auto;
     padding-bottom: 40px;
   }
   .idle-layout__core {
     order: -1;
     padding: 20px 0 6px;
+  }
+  /* Gestapelt braucht jede Spalte ihre volle Inhaltshoehe statt der
+     Desktop-Regel "min-height: 0" (die dort das interne Scrollen im
+     Logbuch ermoeglicht) - sonst quetscht das Grid die Zeilen auf die
+     Viewport-Hoehe zusammen und Panels ueberlappen sich sichtbar. */
+  .idle-layout__aside {
+    min-height: auto;
   }
   .idle-layout__aside--right > * {
     min-height: 220px;

@@ -6,13 +6,18 @@ interface HudFrameProps {
   children: ReactNode;
   className?: string;
   style?: CSSProperties;
+  /** Verzoegerung (Sekunden) fuer das gestaffelte Einblenden beim ersten Rendern. */
+  delay?: number;
 }
 
 // Eckenklammern-Panel statt voller Box - das durchgaengige Bauelement fuer
 // jede Flaeche im HUD (Idle-Panels, Recherche-Karten, Globus-Overlay, ...).
-export default function HudFrame({ title, children, className, style }: HudFrameProps) {
+export default function HudFrame({ title, children, className, style, delay = 0 }: HudFrameProps) {
   return (
-    <div className={`hud-frame${className ? ` ${className}` : ""}`} style={style}>
+    <div
+      className={`hud-frame${className ? ` ${className}` : ""}`}
+      style={{ ...style, ["--frame-delay" as string]: `${delay}s` }}
+    >
       <span className="hud-frame__corner hud-frame__corner--tl" />
       <span className="hud-frame__corner hud-frame__corner--tr" />
       <span className="hud-frame__corner hud-frame__corner--bl" />

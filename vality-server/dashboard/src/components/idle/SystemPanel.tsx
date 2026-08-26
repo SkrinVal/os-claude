@@ -33,12 +33,12 @@ function formatUptime(seconds: number): string {
   return `${m}m`;
 }
 
-export default function SystemPanel() {
+export default function SystemPanel({ delay }: { delay?: number }) {
   const { system } = useHudState();
   const micPermission = useMicPermission();
 
   return (
-    <HudFrame title="System" className="system-panel">
+    <HudFrame title="System" className="system-panel" delay={delay}>
       <dl className="system-panel__grid">
         <div className="system-panel__item">
           <dt>Host</dt>

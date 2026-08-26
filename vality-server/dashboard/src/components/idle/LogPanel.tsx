@@ -3,11 +3,11 @@ import { useHudState } from "../../state/store";
 import HudFrame from "../layout/HudFrame";
 import "./LogPanel.css";
 
-export default function LogPanel() {
+export default function LogPanel({ delay }: { delay?: number }) {
   const { log } = useHudState();
 
   return (
-    <HudFrame title="Logbuch" className="log-panel">
+    <HudFrame title="Logbuch" className="log-panel" delay={delay}>
       <div className="log-panel__list">
         {log.length === 0 && <p className="log-panel__empty mono">Noch keine Interaktionen.</p>}
         <AnimatePresence initial={false}>

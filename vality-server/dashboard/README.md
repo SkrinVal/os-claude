@@ -24,10 +24,11 @@ aus, genau wie vorher.
 
 ## Farbpalette
 
-Amber (siehe `src/styles/theme.css`), bewusst kein Cyan:
+Cyan (siehe `src/styles/theme.css`):
 
 ```
---bg: #0a0e14         --accent: #ff9d3d      --accent-dim: #8a5220
+--bg: #0a0e14         --accent: #22d3ee      --accent-dim: #0e6d80
+--accent-2: #7c6cf0    (nur fuer sehr sparsame Tiefe-Akzente, kein Text)
 --text: #eef0f4       --text-dim: #8890a0    --text-faint: #545e6e
 --ok: #4ade80          --warn: #fbbf24        --danger: #f87171
 ```

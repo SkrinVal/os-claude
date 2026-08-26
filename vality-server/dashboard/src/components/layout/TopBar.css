@@ -7,6 +7,17 @@
   border-bottom: 1px solid var(--line);
   position: relative;
   z-index: 5;
+  background: linear-gradient(180deg, rgba(var(--accent-rgb), 0.04), transparent);
+}
+.topbar::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(var(--accent-rgb), 0.4), transparent);
+  opacity: 0.6;
 }
 
 .topbar__brand {
@@ -17,6 +28,24 @@
   letter-spacing: 0.18em;
   font-size: 13px;
   color: var(--accent);
+  animation: brand-in 0.7s var(--ease-hud) both;
+}
+
+@keyframes brand-in {
+  from {
+    opacity: 0;
+    letter-spacing: 0.5em;
+  }
+  to {
+    opacity: 1;
+    letter-spacing: 0.18em;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .topbar__brand {
+    animation: none;
+  }
 }
 
 .topbar__dot {
@@ -56,6 +85,10 @@
   background: rgba(var(--danger-rgb), 0.08);
   padding: 5px 10px;
   border-radius: 999px;
+  transition:
+    color 0.3s ease,
+    border-color 0.3s ease,
+    background 0.3s ease;
 }
 .topbar__conn--up {
   color: var(--ok);
