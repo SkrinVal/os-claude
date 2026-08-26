@@ -13,6 +13,7 @@ import { broadcast } from "../ws/hub";
 import { handleMemoryCommand } from "../memory/commands";
 import { buildPromptContext } from "../memory/context";
 import { recordConversationTurn } from "../memory/store";
+import { handleMessageCommand } from "../messages/commands";
 
 export const voiceRouter = Router();
 
@@ -35,19 +36,24 @@ voiceRouter.post("/voice", upload.single("audio"), async (req, res) => {
       return;
     }
 
+    const messageResult = features.messages ? await handleMessageCommand(transcript) : null;
+    const memoryResult = !messageResult && features.memory ? await handleMemoryCommand(transcript) : null;
+
     let reply: string;
-    if (features.memory) {
-      const memoryResult = await handleMemoryCommand(transcript);
-      if (memoryResult) {
-        reply = memoryResult.reply;
-      } else {
-        const contextBlock = await buildPromptContext();
-        const prompt = contextBlock ? `${contextBlock}Aktuelle Anfrage: ${transcript}` : transcript;
-        reply = await askClaude(prompt);
-      }
-      await recordConversationTurn(transcript, reply);
+    if (messageResult) {
+      reply = messageResult.reply;
+    } else if (memoryResult) {
+      reply = memoryResult.reply;
+    } else if (features.memory) {
+      const contextBlock = await buildPromptContext();
+      const prompt = contextBlock ? `${contextBlock}Aktuelle Anfrage: ${transcript}` : transcript;
+      reply = await askClaude(prompt);
     } else {
       reply = await askClaude(transcript);
+    }
+
+    if (features.memory) {
+      await recordConversationTurn(transcript, reply);
     }
 
     const audioPath = await synthesizeSpeech(reply);

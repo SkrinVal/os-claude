@@ -52,6 +52,15 @@ export const config = {
     token: process.env.PRESENCE_TOKEN ?? "",
   },
 
+  messages: {
+    // Ob eingehende Nachrichten (SMS/WhatsApp-Vorschau) per Piper vorgelesen
+    // werden. false = nur loggen/im Dashboard zeigen, nicht vorlesen.
+    readAloud: (process.env.MESSAGES_READ_ALOUD ?? "true") !== "false",
+    // Vor dem tatsaechlichen SMS-Versand per Sprache bestaetigen lassen
+    // ("Ja, senden"). Auf false stellen, um das zu ueberspringen.
+    confirmBeforeSend: (process.env.MESSAGES_CONFIRM_BEFORE_SEND ?? "true") !== "false",
+  },
+
   dataDir: path.resolve(__dirname, "..", "..", "data"),
   tmpDir: path.resolve(__dirname, "..", "..", "data", "tmp"),
   audioOutDir: path.resolve(__dirname, "..", "..", "data", "audio-out"),

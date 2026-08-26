@@ -77,8 +77,9 @@ node -e "require('./dist/brain/claude').askClaude('Sag Hallo').then(console.log)
 }
 ```
 
-Nur `memory` existiert bisher. Nach einer Aenderung an der Datei den Server
-neu starten (kein Datei-Watcher, bewusst einfach gehalten).
+`memory`, `presence` und `messages` existieren. Nach einer Aenderung an
+der Datei den Server neu starten (kein Datei-Watcher, bewusst einfach
+gehalten).
 
 ## Feature 1: Gedaechtnis
 
@@ -175,6 +176,70 @@ Dashboard sollte einen neuen Eintrag `[Ankunft zuhause]` zeigen und die
 Antwort automatisch vorlesen (Browser einmal angeklickt haben, sonst
 blockiert Autoplay). Mit dem Handy: siehe `vality-app/README.md`.
 
+## Feature 3: Nachrichten vorlesen & diktieren
+
+Erfasst eingehende SMS und WhatsApp-Benachrichtigungsvorschauen (ueber die
+Handy-App, echtes natives Android-Modul, siehe `vality-app/README.md`),
+liest sie vor und kann diktierte SMS-Antworten tatsaechlich verschicken.
+
+`POST /api/messages` (gleiche Token-Pruefung wie `/api/presence`, Body
+`{ source: "sms" | "whatsapp", sender, body }`):
+
+1. Antwortet sofort `202`, Vorlesen laeuft danach im Hintergrund.
+2. Liest **woertlich** vor ("Neue Nachricht von X über SMS: ...") - bewusst
+   ohne `claude -p`-Umformulierung, damit die tatsaechliche Nachricht
+   ankommt, nicht eine Paraphrase davon. `MESSAGES_READ_ALOUD=false`
+   schaltet das Vorlesen ab (Nachricht landet dann nur im internen
+   Kurzverlauf, ohne Sprachausgabe).
+
+**Sprachbefehle** (per Mikro am PC, vor `claude -p` abgefangen, gelten
+immer fuer die zuletzt empfangene Nachricht - kein Namens-Lookup, das
+kommt mit Feature 4):
+
+- „Antworte, dass ich später komme" → bei SMS: fragt (wenn
+  `MESSAGES_CONFIRM_BEFORE_SEND` nicht `false` ist) erst nach, sonst
+  direkt gesendet. Bei WhatsApp: liest nur einen Textvorschlag vor, da es
+  keine Sende-API gibt.
+- „Ja, senden" / „Bestätigen" → bestaetigt eine wartende Antwort, schickt
+  einen `send_sms`-Befehl per WebSocket ans Handy.
+- „Abbrechen" / „Nein" → verwirft eine wartende Antwort. Ohne wartende
+  Antwort wirkungslos (faellt normal an `claude -p` durch).
+
+`messages: true` in `config/features.json`, `PRESENCE_TOKEN` in `.env`
+(gleiches Token wie fuer Presence).
+
+### Testen
+
+Ohne Handy, Nachricht simulieren:
+
+```bash
+curl -X POST http://localhost:4390/api/messages \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <dein PRESENCE_TOKEN>" \
+  -d '{"source":"sms","sender":"+491701234567","body":"Kommst du noch?"}'
+```
+
+Dashboard sollte `[SMS von +491701234567]` zeigen und vorlesen. Danach am
+Mikro „Antworte, dass ich in 10 Minuten da bin" sagen → Bestaetigungs-
+Rueckfrage, dann „Ja, senden" → `send_sms` wird gebroadcastet (ohne
+verbundenes Handy passiert dann sichtbar nichts weiter, das ist fuer den
+reinen Server-Test schon ausreichend). Voller End-to-End-Test inklusive
+tatsaechlichem SMS-Versand: siehe `vality-app/README.md`.
+
+Isolierter Logiktest ohne Server:
+
+```bash
+node -e "
+const { addMessage } = require('./dist/messages/store');
+const { handleMessageCommand } = require('./dist/messages/commands');
+(async () => {
+  addMessage({ source: 'sms', sender: '+491701234567', body: 'Kommst du noch?', ts: new Date().toISOString() });
+  console.log(await handleMessageCommand('Antworte, dass ich in 10 Minuten da bin'));
+  console.log(await handleMessageCommand('Ja, senden'));
+})();
+"
+```
+
 ## Produktions-Build
 
 ```bash
@@ -201,7 +266,11 @@ vality-server/
       cleanup.ts       Stale-Sweep
     presence/         Feature 2: Anwesenheitserkennung
       reactions.ts    Begruessung/Verabschiedung generieren + vorlesen
-    routes/           Express-Routen (/api/voice, /api/status, /api/history, /api/presence)
+    messages/         Feature 3: Nachrichten
+      store.ts        Kurzverlauf (nur im Speicher, siehe vality-app/README.md)
+      reactions.ts    Vorlesen eingehender Nachrichten
+      commands.ts     "Antworte..."/"Ja, senden"/"Abbrechen"
+    routes/           Express-Routen (/api/voice, /api/status, /api/history, /api/presence, /api/messages)
     ws/hub.ts         WebSocket-Broadcast fuer das Dashboard
     util/history.ts   In-Memory-Verlauf der letzten Interaktionen (Dashboard-Anzeige)
     index.ts          Server-Einstiegspunkt
@@ -213,10 +282,8 @@ vality-server/
 
 ## Geplante Ausbaustufen
 
-- Feature 3: Nachrichten vorlesen & diktieren (SMS/WhatsApp) — braucht
-  einen nativen Android-Modul-Baustein (NotificationListenerService) im
-  Custom-Dev-Client von `vality-app/`
-- Feature 4: Anrufe & Kurznachrichten per Sprachbefehl — wie Feature 3
+- Feature 4: Anrufe & Kurznachrichten per Sprachbefehl (mit Kontakt-
+  Namensaufloesung, Bestaetigung vor dem Senden/Anrufen)
 - Code-/Datei-Steuerung ueber die Claude Code CLI selbst
 - System-Steuerung (Apps oeffnen, Lautstaerke)
 - Timer & Erinnerungen mit proaktiver Sprachausgabe (node-cron)

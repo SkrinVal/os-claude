@@ -8,9 +8,13 @@ export interface HomeLocation {
 
 export interface AppSettings {
   serverUrl: string;
+  // Ein gemeinsames Geraete-Token fuer alle Server-Endpunkte (Presence,
+  // Messages, ...) - eine Installation, ein Geheimnis.
   presenceToken: string;
   presenceEnabled: boolean;
   home: HomeLocation | null;
+  whatsappEnabled: boolean;
+  smsEnabled: boolean;
 }
 
 const STORAGE_KEY = "vality.settings.v1";
@@ -20,6 +24,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   presenceToken: "",
   presenceEnabled: false,
   home: null,
+  whatsappEnabled: false,
+  smsEnabled: false,
 };
 
 export async function loadSettings(): Promise<AppSettings> {
