@@ -1,4 +1,5 @@
 import { useHudState } from "../../state/store";
+import ModeSwitcher from "./ModeSwitcher";
 import "./TopBar.css";
 
 export default function TopBar({ onToggleDebug }: { onToggleDebug: () => void }) {
@@ -9,6 +10,9 @@ export default function TopBar({ onToggleDebug }: { onToggleDebug: () => void })
       <div className="topbar__brand">
         <span className="topbar__dot" />
         VALITY&nbsp;AI
+      </div>
+      <div className="topbar__center">
+        <ModeSwitcher />
       </div>
       <div className="topbar__right">
         <div className={`topbar__conn mono${connected ? " topbar__conn--up" : ""}`}>

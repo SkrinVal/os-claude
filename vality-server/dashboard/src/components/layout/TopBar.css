@@ -1,13 +1,41 @@
 .topbar {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: space-between;
+  gap: 12px;
   padding: 14px 20px;
   padding-top: max(14px, env(safe-area-inset-top));
   border-bottom: 1px solid var(--line);
   position: relative;
   z-index: 5;
   background: linear-gradient(180deg, rgba(var(--accent-rgb), 0.04), transparent);
+}
+
+.topbar__center {
+  display: flex;
+  justify-content: center;
+  min-width: 0;
+}
+
+.topbar__right {
+  justify-self: end;
+}
+
+@media (max-width: 640px) {
+  .topbar {
+    grid-template-columns: auto 1fr;
+    grid-template-areas: "brand right" "center center";
+    row-gap: 10px;
+  }
+  .topbar__brand {
+    grid-area: brand;
+  }
+  .topbar__right {
+    grid-area: right;
+  }
+  .topbar__center {
+    grid-area: center;
+  }
 }
 .topbar::after {
   content: "";
