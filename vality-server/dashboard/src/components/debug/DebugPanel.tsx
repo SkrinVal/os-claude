@@ -55,9 +55,9 @@ export default function DebugPanel({ open }: { open: boolean }) {
             <dd>{state.micLevel.toFixed(2)}</dd>
           </dl>
           <p className="debug-panel__note">
-            Recherche/Globus lassen sich hier schon testen. Ausgeloest werden
-            sie spaeter per Sprachbefehl - das Backend-Event „ui_mode" dafuer
-            ist vorbereitet, aber noch nicht gesendet.
+            Manuelles Umschalten zum Testen. Im echten Betrieb geht das auch
+            per Sprachbefehl (feste Formulierungen oder frei, siehe
+            hud/nlIntent.ts) oder über den Umschalter in der Kopfzeile.
           </p>
         </motion.aside>
       )}

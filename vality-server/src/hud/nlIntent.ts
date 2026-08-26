@@ -2,16 +2,22 @@ import { askClaude } from "../brain/claude";
 import { broadcast } from "../ws/hub";
 import { buildCityBriefing } from "./cityBriefing";
 import { features } from "../config/features";
-import { addFact, hasSimilarFact } from "../memory/store";
+import { addFact, hasSimilarFact, replaceFact } from "../memory/store";
 
 const ALLOWED_ACTIONS = ["globe_city", "globe_open", "research", "idle", "none"] as const;
 type Action = (typeof ALLOWED_ACTIONS)[number];
+
+// Feste, kleine Kategorien statt Freitext - macht die Gedaechtnis-Karte im
+// Dashboard uebersichtlich gruppierbar statt einer losen Liste.
+const LEARN_CATEGORIES = ["Vorlieben", "Familie & Beziehungen", "Beruf", "Termine & Pläne", "Sonstiges"] as const;
 
 interface ClassifiedIntent {
   action: Action;
   target: string;
   reply: string;
   learn: string;
+  category: string;
+  supersedes: string;
 }
 
 // hud/commands.ts erkennt nur eine feste Handvoll Formulierungen ("zeig mir
@@ -34,14 +40,16 @@ function buildClassifierPrompt(transcript: string, contextBlock: string): string
     '- "none": Keine Navigation - eine normale Frage, Unterhaltung, Aussage oder ein anderer Befehl.',
     "",
     "Antworte AUSSCHLIESSLICH mit einem einzigen validen JSON-Objekt, keine Markdown-Codeblöcke, kein Text davor oder danach:",
-    '{"action": "globe_city|globe_open|research|idle|none", "target": "...", "reply": "...", "learn": "..."}',
+    '{"action": "globe_city|globe_open|research|idle|none", "target": "...", "reply": "...", "learn": "...", "category": "...", "supersedes": "..."}',
     "",
     '"reply" ist deine kurze, natürliche gesprochene Antwort auf Deutsch.',
     'Bei "globe_city" und "research" reicht ein knapper Bestätigungssatz ("Ich zeige dir X." / "Ich suche X.") - die eigentlichen Fakten (Wetter, Nachrichten, Rechercheergebnisse) kommen separat aus echten Datenquellen. Erfinde dort KEINE Wetterdaten, Zahlen, Ereignisse oder sonstigen Fakten über den Ort/das Thema.',
     'Bei "none" ist "reply" deine vollständige, hilfreiche Antwort auf die Anfrage - hier normal und ausführlich wie sonst auch antworten.',
     'Bei "globe_open" und "idle" bleibt "target" leer.',
     "",
-    '"learn": Falls der Nutzer in DIESER Anfrage klar und explizit einen neuen, dauerhaften Fakt über sich preisgibt (Name, Vorliebe, Beziehung, Beruf, wiederkehrender Termin o.ä.), ein kurzer, präziser Satz mit genau diesem Fakt, aus Nutzer-Perspektive formuliert ("Mag Kaffee ohne Zucker", "Schwester heißt Anna"). NUR wortwörtlich Gesagtes übernehmen, NICHTS interpretieren, vermuten oder ausschmücken. Sonst leerer String "". Bei Navigationsbefehlen (nicht "none") immer leerer String.',
+    '"learn": Falls der Nutzer in DIESER Anfrage klar und explizit einen neuen, dauerhaften, wiederverwendbaren Fakt über sich preisgibt (Name, Vorliebe, Beziehung, Beruf, wiederkehrender Termin o.ä.), ein kurzer, präziser Satz mit genau diesem Fakt, aus Nutzer-Perspektive formuliert ("Mag Kaffee ohne Zucker", "Schwester heißt Anna"). NUR wortwörtlich Gesagtes übernehmen, NICHTS interpretieren, vermuten oder ausschmücken. KEINE einmaligen/vergänglichen Aussagen ("ist gerade müde", "es regnet") - nur was auch in einem Monat noch stimmt und nützlich ist. Sonst leerer String "". Bei Navigationsbefehlen (nicht "none") immer leerer String.',
+    `"category": Nur wenn "learn" nicht leer ist - die am besten passende Kategorie, GENAU eine dieser Optionen: ${LEARN_CATEGORIES.map((c) => `"${c}"`).join(", ")}. Sonst leerer String.`,
+    '"supersedes": Nur wenn "learn" nicht leer ist UND einen der oben unter "Bekannte Fakten über den Nutzer" gelisteten Fakten ersetzt oder ihm widerspricht (z.B. eine geänderte Vorliebe) - dann den betroffenen Fakt-Text GENAU SO, WIE ER DORT STEHT, hier eintragen. Sonst leerer String.',
     "",
   ].join("\n");
 
@@ -78,13 +86,23 @@ function isClassifiedIntent(value: unknown): value is ClassifiedIntent {
 
 // Beilaeufig gelernte Fakten laufen nur bei ganz normalen Gespraechen mit
 // ("none") - bei einem Navigationsbefehl steht "learn" laut Prompt ohnehin
-// leer, das ist hier nur die zweite Absicherung. hasSimilarFact verhindert,
-// dass derselbe Fakt bei jedem beilaeufigen Erwaehnen erneut gespeichert
+// leer, das ist hier nur die zweite Absicherung.
+//
+// Zwei Faelle: "supersedes" zeigt an, dass der neue Fakt einen bekannten
+// ersetzt (z.B. eine geaenderte Vorliebe) - dann wird der alte ersetzt statt
+// beide nebeneinander stehen zu lassen. Sonst verhindert hasSimilarFact,
+// dass derselbe Fakt bei jeder beilaeufigen Erwaehnung erneut gespeichert
 // wird (siehe memory/store.ts).
-async function maybeLearn(learn: string, action: Action): Promise<void> {
+async function maybeLearn(learn: string, category: string, supersedes: string, action: Action): Promise<void> {
   if (!features.memory || action !== "none" || !learn) return;
+  const cat = category || "Sonstiges";
+
+  if (supersedes) {
+    await replaceFact(supersedes, cat, learn, "learned");
+    return;
+  }
   if (hasSimilarFact(learn)) return;
-  await addFact("automatisch", learn, "learned");
+  await addFact(cat, learn, "learned");
 }
 
 // Faellt Claude aus dem Format oder erkennt keine Navigation, ist "raw" die
@@ -103,9 +121,11 @@ export async function classifyAndRespond(transcript: string, contextBlock: strin
   const target = typeof parsed.target === "string" ? parsed.target.trim() : "";
   const claudeReply = typeof parsed.reply === "string" ? parsed.reply.trim() : "";
   const learn = typeof parsed.learn === "string" ? parsed.learn.trim() : "";
+  const category = typeof parsed.category === "string" ? parsed.category.trim() : "";
+  const supersedes = typeof parsed.supersedes === "string" ? parsed.supersedes.trim() : "";
   const fallback = () => claudeReply || raw.trim();
 
-  await maybeLearn(learn, parsed.action);
+  await maybeLearn(learn, category, supersedes, parsed.action);
 
   switch (parsed.action) {
     case "globe_open":

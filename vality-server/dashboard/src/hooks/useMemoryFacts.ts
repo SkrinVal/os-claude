@@ -57,5 +57,16 @@ export function useMemoryFacts() {
     return () => clearInterval(interval);
   }, []);
 
-  return { facts, loading, error };
+  // Optimistisch aus der Liste nehmen, statt auf den naechsten Poll zu
+  // warten - fuehlt sich beim Klicken sofort reaktionsschnell an. Schlaegt
+  // der Server-Aufruf fehl, kommt der Fakt beim naechsten Poll einfach
+  // zurueck (kein Sonderfall noetig).
+  function remove(id: string): void {
+    setFacts((prev) => prev.filter((f) => f.id !== id));
+    fetch(`/api/memory/facts/${id}`, { method: "DELETE" }).catch(() => {
+      setTick((t) => t + 1);
+    });
+  }
+
+  return { facts, loading, error, remove };
 }

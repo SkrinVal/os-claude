@@ -87,6 +87,38 @@ export function hasSimilarFact(content: string, threshold = 0.6): boolean {
   return getActiveFacts().some((f) => wordOverlap(f.content, content) >= threshold);
 }
 
+// Findet den Fakt, dessen Text am ehesten zu "content" passt (exakt, dann
+// als Teilstring) - genutzt, um den Wortlaut zu finden, den Claude aus der
+// "Bekannte Fakten"-Liste im Prompt-Kontext zurueckgegeben hat.
+function findFactByContent(content: string): Fact | null {
+  const norm = content.trim().toLowerCase();
+  if (!norm) return null;
+  const exact = getActiveFacts().find((f) => f.content.trim().toLowerCase() === norm);
+  if (exact) return exact;
+  return findFacts(content)[0] ?? null;
+}
+
+// Ein neuer Fakt widerspricht/aktualisiert einen bekannten (z.B. eine
+// geaenderte Vorliebe) - der alte wird ersetzt statt dass beide
+// nebeneinander stehen bleiben und sich widersprechen. Wird der alte Fakt
+// nicht gefunden (Wortlaut hat sich zu sehr unterschieden), landet der neue
+// trotzdem als eigenstaendiger Fakt.
+export async function replaceFact(oldContent: string, category: string, newContent: string, source: Fact["source"]): Promise<Fact> {
+  const old = findFactByContent(oldContent);
+  if (old) {
+    facts = facts.filter((f) => f.id !== old.id);
+  }
+  return addFact(category, newContent, source);
+}
+
+export async function deleteFactById(id: string): Promise<boolean> {
+  const before = facts.length;
+  facts = facts.filter((f) => f.id !== id);
+  if (facts.length === before) return false;
+  await persistFacts();
+  return true;
+}
+
 // Findet aktive Fakten, deren Inhalt oder Kategorie das Suchwort enthaelt.
 export function findFacts(query: string): Fact[] {
   const q = query.trim().toLowerCase();
