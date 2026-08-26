@@ -2,7 +2,15 @@ import type { WebSocket, WebSocketServer } from "ws";
 
 export type ValityEvent =
   | { type: "mic_status"; listening: boolean }
-  | { type: "interaction"; id: string; transcript: string; reply: string; audioUrl: string | null; ts: string }
+  | {
+      type: "interaction";
+      id: string;
+      transcript: string;
+      reply: string;
+      audioUrl: string | null;
+      ts: string;
+      kind?: "briefing" | "reminder";
+    }
   | { type: "error"; message: string; ts: string }
   // Schaltet den Dashboard-Modus per Sprachbefehl um (siehe hud/commands.ts).
   // "city" ist bewusst nur ein Name, keine Koordinaten - das Dashboard

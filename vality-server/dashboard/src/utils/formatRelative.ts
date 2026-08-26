@@ -11,3 +11,17 @@ export function formatRelative(ts: string, now: number): string {
   if (diffH < 24) return `vor ${diffH} Std`;
   return new Date(ts).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" });
 }
+
+// Gegenstueck fuer Zukunft ("in 20 Min") - genutzt von RemindersPanel fuer
+// den Countdown bis zur Erinnerung.
+export function formatUntil(ts: string, now: number): string {
+  const diffSec = Math.round((new Date(ts).getTime() - now) / 1000);
+  if (diffSec <= 0) return "jetzt";
+  if (diffSec < 60) return `in ${diffSec}s`;
+  const diffMin = Math.round(diffSec / 60);
+  if (diffMin < 60) return `in ${diffMin} Min`;
+  const diffH = Math.round(diffMin / 60);
+  if (diffH < 24) return `in ${diffH} Std`;
+  const diffD = Math.round(diffH / 24);
+  return `in ${diffD} Tg`;
+}

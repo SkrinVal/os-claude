@@ -14,9 +14,12 @@ import { contactsRouter } from "./routes/contacts";
 import { newsRouter } from "./routes/news";
 import { briefingRouter } from "./routes/briefing";
 import { memoryRouter } from "./routes/memory";
+import { remindersRouter } from "./routes/reminders";
 import { attachWebSocketServer } from "./ws/hub";
 import { loadMemory } from "./memory/store";
 import { sweepStaleFacts } from "./memory/cleanup";
+import { loadReminders } from "./reminders/store";
+import { startReminderScheduler } from "./reminders/scheduler";
 
 async function ensureDataDirs(): Promise<void> {
   await fs.mkdir(config.tmpDir, { recursive: true });
@@ -38,6 +41,9 @@ async function main(): Promise<void> {
       sweepStaleFacts().catch((err) => console.error("Gedaechtnis-Sweep fehlgeschlagen:", err));
     }, ONE_DAY_MS);
   }
+
+  await loadReminders();
+  startReminderScheduler();
 
   const app = express();
   app.use(cors());
@@ -67,6 +73,8 @@ async function main(): Promise<void> {
   if (features.memory) {
     console.log("Gedaechtnis: aktiv, GET /api/memory/facts liefert gemerkte + gelernte Fakten fuers Dashboard.");
   }
+  app.use("/api", remindersRouter);
+  console.log("Erinnerungen: aktiv, GET /api/reminders + Sprachbefehle 'Erinnere mich ...' / 'was steht an'.");
   app.use("/audio", express.static(config.audioOutDir));
   app.use("/", express.static(path.join(__dirname, "..", "public")));
 

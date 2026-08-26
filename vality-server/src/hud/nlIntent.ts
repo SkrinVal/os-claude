@@ -3,8 +3,10 @@ import { broadcast } from "../ws/hub";
 import { buildCityBriefing } from "./cityBriefing";
 import { features } from "../config/features";
 import { addFact, hasSimilarFact, replaceFact } from "../memory/store";
+import { addReminder } from "../reminders/store";
+import { formatGermanDateTime } from "../reminders/format";
 
-const ALLOWED_ACTIONS = ["globe_city", "globe_open", "research", "idle", "none"] as const;
+const ALLOWED_ACTIONS = ["globe_city", "globe_open", "research", "idle", "remind", "none"] as const;
 type Action = (typeof ALLOWED_ACTIONS)[number];
 
 // Feste, kleine Kategorien statt Freitext - macht die Gedaechtnis-Karte im
@@ -18,6 +20,7 @@ interface ClassifiedIntent {
   learn: string;
   category: string;
   supersedes: string;
+  remindAt: string;
 }
 
 // hud/commands.ts erkennt nur eine feste Handvoll Formulierungen ("zeig mir
@@ -29,23 +32,45 @@ interface ClassifiedIntent {
 // normalen Fragen gleich die fertige Antwort, statt einen zweiten Aufruf zu
 // brauchen (kein zusaetzliches Latenz-Budget gegenueber vorher).
 function buildClassifierPrompt(transcript: string, contextBlock: string): string {
+  // Bewusst OHNE feste Zeitzonen-Angabe: der Server laeuft auf der eigenen
+  // Maschine des Nutzers, toLocaleString() ohne timeZone-Option liefert
+  // also automatisch dessen tatsaechliche lokale Zeit - unabhaengig davon,
+  // wo das laeuft. "remindAt" unten wird bewusst genauso naiv (ohne
+  // Zeitzone) zurueckerwartet und dann per new Date() ebenfalls als lokale
+  // Serverzeit interpretiert (siehe classifyAndRespond) - beide Seiten
+  // bleiben dadurch konsistent, ganz ohne TZ-Umrechnung.
+  const now = new Date();
+  const nowLabel = now.toLocaleString("de-DE", {
+    weekday: "long",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
   const instructions = [
     "Du bist Vality, ein persönlicher Sprachassistent mit einem Dashboard.",
+    `Aktuelles Datum/Uhrzeit (lokale Zeit des Nutzers): ${nowLabel}.`,
     "Analysiere die folgende gesprochene Anfrage und entscheide, ob sie einen der Navigationsbefehle des Dashboards auslösen soll:",
     "",
     '- "globe_city": Die Anfrage nennt eine Stadt oder ein Land und will sie auf dem Globus sehen, wissen wo sie liegt, das dortige Wetter, oder generell "zeig mir X" für einen Ort. "target" = Name der Stadt/des Landes.',
     '- "globe_open": Die Anfrage will einfach den Globus/die Weltkarte öffnen, ohne einen bestimmten Ort zu nennen.',
     '- "research": Die Anfrage will etwas über eine Person, ein Thema oder einen Begriff nachschlagen/erfahren (nicht über einen Ort). "target" = die Person oder das Thema.',
     '- "idle": Die Anfrage will zurück zur Übersicht/zum Startbildschirm.',
+    '- "remind": Die Anfrage will an etwas zu einem bestimmten Zeitpunkt erinnert werden ("Erinnere mich ...", "Erinnere mich daran, dass ...", "Denk dran, dass ..."). "target" = der Text der Erinnerung, OHNE die Zeitangabe.',
     '- "none": Keine Navigation - eine normale Frage, Unterhaltung, Aussage oder ein anderer Befehl.',
     "",
     "Antworte AUSSCHLIESSLICH mit einem einzigen validen JSON-Objekt, keine Markdown-Codeblöcke, kein Text davor oder danach:",
-    '{"action": "globe_city|globe_open|research|idle|none", "target": "...", "reply": "...", "learn": "...", "category": "...", "supersedes": "..."}',
+    '{"action": "globe_city|globe_open|research|idle|remind|none", "target": "...", "reply": "...", "learn": "...", "category": "...", "supersedes": "...", "remindAt": "..."}',
     "",
     '"reply" ist deine kurze, natürliche gesprochene Antwort auf Deutsch.',
     'Bei "globe_city" und "research" reicht ein knapper Bestätigungssatz ("Ich zeige dir X." / "Ich suche X.") - die eigentlichen Fakten (Wetter, Nachrichten, Rechercheergebnisse) kommen separat aus echten Datenquellen. Erfinde dort KEINE Wetterdaten, Zahlen, Ereignisse oder sonstigen Fakten über den Ort/das Thema.',
+    'Bei "remind" reicht ebenfalls ein knapper Bestätigungssatz - die genaue Zeitangabe im Bestätigungssatz kommt separat aus "remindAt", nicht von dir formuliert.',
     'Bei "none" ist "reply" deine vollständige, hilfreiche Antwort auf die Anfrage - hier normal und ausführlich wie sonst auch antworten.',
     'Bei "globe_open" und "idle" bleibt "target" leer.',
+    "",
+    `"remindAt": NUR bei "action": "remind" - der genannte Zeitpunkt als ISO-8601-Datum/Uhrzeit ohne Zeitzone (z.B. "2026-08-27T09:00:00"), berechnet aus der Zeitangabe im Gesagten ("morgen um 9", "in zwei Stunden", "Freitag um 15 Uhr") ausgehend vom oben genannten aktuellen Datum/Uhrzeit. Ist keine Zeitangabe erkennbar, bleibt "remindAt" leer. Sonst immer leerer String.`,
     "",
     '"learn": Falls der Nutzer in DIESER Anfrage klar und explizit einen neuen, dauerhaften, wiederverwendbaren Fakt über sich preisgibt (Name, Vorliebe, Beziehung, Beruf, wiederkehrender Termin o.ä.), ein kurzer, präziser Satz mit genau diesem Fakt, aus Nutzer-Perspektive formuliert ("Mag Kaffee ohne Zucker", "Schwester heißt Anna"). NUR wortwörtlich Gesagtes übernehmen, NICHTS interpretieren, vermuten oder ausschmücken. KEINE einmaligen/vergänglichen Aussagen ("ist gerade müde", "es regnet") - nur was auch in einem Monat noch stimmt und nützlich ist. Sonst leerer String "". Bei Navigationsbefehlen (nicht "none") immer leerer String.',
     `"category": Nur wenn "learn" nicht leer ist - die am besten passende Kategorie, GENAU eine dieser Optionen: ${LEARN_CATEGORIES.map((c) => `"${c}"`).join(", ")}. Sonst leerer String.`,
@@ -123,6 +148,7 @@ export async function classifyAndRespond(transcript: string, contextBlock: strin
   const learn = typeof parsed.learn === "string" ? parsed.learn.trim() : "";
   const category = typeof parsed.category === "string" ? parsed.category.trim() : "";
   const supersedes = typeof parsed.supersedes === "string" ? parsed.supersedes.trim() : "";
+  const remindAt = typeof parsed.remindAt === "string" ? parsed.remindAt.trim() : "";
   const fallback = () => claudeReply || raw.trim();
 
   await maybeLearn(learn, category, supersedes, parsed.action);
@@ -138,6 +164,15 @@ export async function classifyAndRespond(transcript: string, contextBlock: strin
       if (!target) return fallback();
       broadcast({ type: "ui_mode", mode: "research", query: target });
       return `Ich suche „${target}".`;
+    case "remind": {
+      if (!target || !remindAt) return fallback();
+      const dueDate = new Date(remindAt);
+      if (Number.isNaN(dueDate.getTime()) || dueDate.getTime() <= Date.now()) {
+        return "Den Zeitpunkt für die Erinnerung konnte ich nicht sicher verstehen - sag das nochmal etwas genauer.";
+      }
+      await addReminder(target, dueDate.toISOString());
+      return `Ich erinnere dich am ${formatGermanDateTime(dueDate)} an: ${target}.`;
+    }
     case "globe_city":
       if (!target) return fallback();
       broadcast({ type: "ui_mode", mode: "globe", city: target });

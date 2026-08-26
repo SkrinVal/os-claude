@@ -7,6 +7,8 @@ export interface LogEntry {
   transcript: string;
   reply: string;
   ts: string;
+  /** Fehlt bei normalen Sprachantworten - markiert Systemauslöser fürs Logbuch. */
+  kind?: "briefing" | "reminder";
 }
 
 export interface SystemStatus {

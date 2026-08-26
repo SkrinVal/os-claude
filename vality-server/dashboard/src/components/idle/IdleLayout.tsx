@@ -5,6 +5,7 @@ import QuickActionsPanel from "./QuickActionsPanel";
 import NewsPanel from "./NewsPanel";
 import ThemePanel from "./ThemePanel";
 import MemoryPanel from "./MemoryPanel";
+import RemindersPanel from "./RemindersPanel";
 import "./IdleLayout.css";
 
 export default function IdleLayout() {
@@ -23,7 +24,8 @@ export default function IdleLayout() {
 
       <div className="idle-layout__aside idle-layout__aside--right">
         <LogPanel delay={0.1} />
-        <NewsPanel delay={0.18} />
+        <RemindersPanel delay={0.16} />
+        <NewsPanel delay={0.22} />
       </div>
     </div>
   );

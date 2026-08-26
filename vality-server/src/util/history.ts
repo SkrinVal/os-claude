@@ -4,6 +4,8 @@ export interface Interaction {
   reply: string;
   audioUrl: string | null;
   ts: string;
+  /** Fehlt bei normalen Sprachantworten - markiert Systemauslöser fürs Logbuch. */
+  kind?: "briefing" | "reminder";
 }
 
 const MAX_ENTRIES = 50;

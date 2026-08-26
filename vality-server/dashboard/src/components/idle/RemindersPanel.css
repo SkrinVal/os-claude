@@ -1,0 +1,91 @@
+.reminders-panel {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.reminders-panel .hud-frame__body {
+  min-height: 0;
+  flex: 1;
+}
+
+.reminders-panel__skeletons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 2px 0;
+}
+
+.reminders-panel__hint {
+  font-size: 12px;
+  color: var(--text-faint);
+  margin: 4px 0;
+}
+.reminders-panel__hint--error {
+  color: var(--danger);
+}
+
+.reminders-panel__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.reminders-panel__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--line);
+}
+.reminders-panel__item:last-child {
+  border-bottom: none;
+}
+
+.reminders-panel__main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.reminders-panel__text {
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--text);
+}
+
+.reminders-panel__when {
+  font-size: 9.5px;
+  letter-spacing: 0.05em;
+  color: var(--accent);
+}
+
+.reminders-panel__delete {
+  flex-shrink: 0;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-faint);
+  font-size: 14px;
+  line-height: 1;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition:
+    color 0.2s,
+    border-color 0.2s,
+    background 0.2s;
+}
+.reminders-panel__delete:hover {
+  color: var(--danger);
+  border-color: rgba(var(--danger-rgb), 0.4);
+  background: rgba(var(--danger-rgb), 0.08);
+}
+.reminders-panel__delete:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}

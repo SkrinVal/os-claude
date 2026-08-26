@@ -21,8 +21,8 @@ briefingRouter.post("/briefing", async (_req, res) => {
     const id = randomUUID();
     const ts = new Date().toISOString();
 
-    addInteraction({ id, transcript: "", reply, audioUrl, ts });
-    broadcast({ type: "interaction", id, transcript: "", reply, audioUrl, ts });
+    addInteraction({ id, transcript: "", reply, audioUrl, ts, kind: "briefing" });
+    broadcast({ type: "interaction", id, transcript: "", reply, audioUrl, ts, kind: "briefing" });
 
     res.json({ id, reply, audioUrl, ts });
   } catch (err) {

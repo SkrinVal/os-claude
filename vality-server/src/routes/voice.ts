@@ -17,6 +17,7 @@ import { handleCallCommand } from "../calls/commands";
 import { handleConfirmCommand } from "../shared/confirmCommands";
 import { handleHudCommand } from "../hud/commands";
 import { classifyAndRespond } from "../hud/nlIntent";
+import { handleReminderCommand } from "../reminders/commands";
 
 export const voiceRouter = Router();
 
@@ -51,6 +52,10 @@ voiceRouter.post("/voice", upload.single("audio"), async (req, res) => {
       !confirmResult && !messageResult && !callResult && !hudResult && features.memory
         ? await handleMemoryCommand(transcript)
         : null;
+    const reminderResult =
+      !confirmResult && !messageResult && !callResult && !hudResult && !memoryResult
+        ? await handleReminderCommand(transcript)
+        : null;
 
     let reply: string;
     if (confirmResult) {
@@ -63,6 +68,8 @@ voiceRouter.post("/voice", upload.single("audio"), async (req, res) => {
       reply = hudResult.reply;
     } else if (memoryResult) {
       reply = memoryResult.reply;
+    } else if (reminderResult) {
+      reply = reminderResult.reply;
     } else {
       // Kein starres Regex-Muster hat gegriffen (siehe hud/commands.ts) -
       // hier uebernimmt ein einzelner Claude-Aufruf sowohl die

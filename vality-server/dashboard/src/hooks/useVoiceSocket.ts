@@ -8,7 +8,15 @@ import { useHudDispatch, useHudState } from "../state/store";
 // Debug-Panel ausgeloest, siehe DebugPanel.tsx).
 type IncomingEvent =
   | { type: "mic_status"; listening: boolean }
-  | { type: "interaction"; id: string; transcript: string; reply: string; audioUrl: string | null; ts: string }
+  | {
+      type: "interaction";
+      id: string;
+      transcript: string;
+      reply: string;
+      audioUrl: string | null;
+      ts: string;
+      kind?: "briefing" | "reminder";
+    }
   | { type: "error"; message: string; ts: string }
   | UiModeEvent;
 
@@ -53,7 +61,7 @@ export function useVoiceSocket(onModeEvent?: (event: UiModeEvent) => void) {
         if (msg.type === "interaction") {
           dispatch({
             type: "ADD_LOG_ENTRY",
-            entry: { id: msg.id, transcript: msg.transcript, reply: msg.reply, ts: msg.ts },
+            entry: { id: msg.id, transcript: msg.transcript, reply: msg.reply, ts: msg.ts, kind: msg.kind },
           });
           if (msg.audioUrl && !mutedRef.current) {
             const audio = new Audio(msg.audioUrl);

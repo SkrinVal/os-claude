@@ -34,7 +34,7 @@ export default function LogPanel({ delay }: { delay?: number }) {
               {entry.transcript ? (
                 <div className="log-panel__you">DU: {entry.transcript}</div>
               ) : (
-                <div className="log-panel__tag mono">BRIEFING</div>
+                <div className="log-panel__tag mono">{entry.kind === "reminder" ? "ERINNERUNG" : "BRIEFING"}</div>
               )}
               <div className="log-panel__reply">VALITY: {entry.reply}</div>
             </motion.div>
