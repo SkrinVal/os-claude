@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback } from "react";
+import { lazy, Suspense, useCallback, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { HudStoreProvider, useHudDispatch, useHudState } from "./state/store";
 import { useVoiceSocket, type UiModeEvent } from "./hooks/useVoiceSocket";
@@ -10,7 +10,22 @@ import ErrorToast from "./components/layout/ErrorToast";
 import IdleLayout from "./components/idle/IdleLayout";
 import ResearchLayout from "./components/research/ResearchLayout";
 import DebugPanel from "./components/debug/DebugPanel";
+import BootSequence from "./components/boot/BootSequence";
 import "./App.css";
+
+const BOOT_STORAGE_KEY = "vality-booted";
+
+// Nur beim ersten Aufruf pro Browser-Tab zeigen (sessionStorage, nicht
+// localStorage - ein neuer Tab/Fenster darf die Sequenz wieder sehen) und
+// nie, wenn das Betriebssystem reduzierte Bewegung wuenscht.
+function shouldSkipBoot(): boolean {
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return true;
+  try {
+    return sessionStorage.getItem(BOOT_STORAGE_KEY) === "true";
+  } catch {
+    return false;
+  }
+}
 
 // three.js/react-globe.gl sind schwer (~600 kB gzip) - erst laden, wenn der
 // Globus-Modus tatsaechlich betreten wird, damit Idle/Recherche schlank
@@ -99,9 +114,25 @@ function Dashboard() {
 }
 
 export default function App() {
+  const [booted, setBooted] = useState(() => shouldSkipBoot());
+
+  function finishBoot() {
+    try {
+      sessionStorage.setItem(BOOT_STORAGE_KEY, "true");
+    } catch {
+      // Speicher kann blockiert sein - dann zeigt jeder Aufruf die Boot-
+      // Sequenz erneut, kein Beinbruch.
+    }
+    setBooted(true);
+  }
+
   return (
     <HudStoreProvider>
+      {/* Dashboard montiert sofort darunter (WebSocket verbindet schon
+          waehrend der Boot-Animation), die Sequenz liegt nur optisch
+          darueber. */}
       <Dashboard />
+      {!booted && <BootSequence onDone={finishBoot} />}
     </HudStoreProvider>
   );
 }
