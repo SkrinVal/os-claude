@@ -21,9 +21,16 @@ export function useNews() {
 
     fetch("/api/news")
       .then(async (res) => {
-        const data = await res.json();
+        let data: { items?: NewsItem[]; error?: string };
+        try {
+          data = await res.json();
+        } catch {
+          // Antwort war kein JSON (z.B. eine Proxy-Fehlerseite) - lieber
+          // eine verstaendliche Meldung als der rohe Parse-Fehler.
+          throw new Error(`Server antwortet unerwartet (Status ${res.status}).`);
+        }
         if (!res.ok) throw new Error(data.error ?? `Status ${res.status}`);
-        return data.items as NewsItem[];
+        return data.items ?? [];
       })
       .then((fetched) => {
         if (!cancelled) {
