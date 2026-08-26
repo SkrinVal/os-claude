@@ -34,9 +34,56 @@
 }
 
 .globe-layout__globe {
+  position: relative;
   flex: 1;
   min-width: 0;
   height: 100%;
+  overflow: hidden;
+}
+
+/* Ruhiges Sternenfeld hinter dem Globus - zwei versetzte Punktraster in
+   unterschiedlicher Groesse/Deckkraft fuer Tiefe, dazu ein sehr langsames
+   Funkeln. Rein dekorativ (pointer-events: none), damit es Klicks auf den
+   Globus nicht stoert. */
+.globe-layout__stars {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(1.4px 1.4px at 20% 30%, rgba(255, 255, 255, 0.9), transparent),
+    radial-gradient(1px 1px at 65% 15%, rgba(255, 255, 255, 0.7), transparent),
+    radial-gradient(1.2px 1.2px at 80% 60%, rgba(255, 255, 255, 0.8), transparent),
+    radial-gradient(1px 1px at 35% 75%, rgba(255, 255, 255, 0.6), transparent),
+    radial-gradient(1.6px 1.6px at 90% 85%, rgba(255, 255, 255, 0.85), transparent),
+    radial-gradient(1px 1px at 10% 90%, rgba(255, 255, 255, 0.5), transparent),
+    radial-gradient(1.3px 1.3px at 50% 45%, rgba(255, 255, 255, 0.7), transparent),
+    radial-gradient(1px 1px at 25% 55%, rgba(var(--accent-rgb), 0.6), transparent);
+  background-repeat: repeat;
+  background-size: 340px 340px;
+  animation: stars-twinkle 6s ease-in-out infinite;
+}
+
+@keyframes stars-twinkle {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.globe-layout__globe canvas {
+  position: relative;
+  z-index: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .globe-layout__stars {
+    animation: none;
+    opacity: 0.8;
+  }
 }
 
 .globe-layout__overlay {
@@ -47,6 +94,48 @@
   flex-direction: column;
   gap: 16px;
   overflow-y: auto;
+}
+
+.globe-layout__search {
+  display: flex;
+  gap: 8px;
+}
+.globe-layout__search input {
+  flex: 1;
+  min-width: 0;
+  background: var(--bg-inset);
+  border: 1px solid var(--line-bright);
+  color: var(--text);
+  font-size: 12.5px;
+  padding: 9px 10px;
+  border-radius: 6px;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+.globe-layout__search input:focus-visible {
+  border-color: var(--accent);
+}
+.globe-layout__search button {
+  flex-shrink: 0;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-dim);
+  color: var(--accent);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  padding: 0 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    border-color 0.2s;
+}
+.globe-layout__search button:hover:not(:disabled) {
+  background: rgba(var(--accent-rgb), 0.22);
+  border-color: var(--accent);
+}
+.globe-layout__search button:disabled {
+  opacity: 0.6;
+  cursor: default;
 }
 
 .globe-layout__city-list {

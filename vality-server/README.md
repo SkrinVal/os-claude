@@ -85,11 +85,12 @@ node -e "require('./dist/brain/claude').askClaude('Sag Hallo').then(console.log)
   "memory": true,
   "presence": false,
   "messages": false,
-  "calls": false
+  "calls": false,
+  "news": true
 }
 ```
 
-Alle vier Module existieren. Nach einer Aenderung an der Datei den Server
+Alle fuenf Module existieren. Nach einer Aenderung an der Datei den Server
 neu starten (kein Datei-Watcher, bewusst einfach gehalten).
 
 ## Feature 1: Gedaechtnis
@@ -313,6 +314,42 @@ const { handleConfirmCommand } = require('./dist/shared/confirmCommands');
 
 Voller Test mit echtem Handy: siehe `vality-app/README.md`.
 
+## Feature 5: Nachrichten-Feed & Dashboard-Sprachsteuerung
+
+`GET /api/news` liefert den Tagesschau-RSS-Feed serverseitig geholt und
+geparst (`src/news/fetchNews.ts`, `fast-xml-parser`), damit das Dashboard
+ihn ohne CORS-Probleme anzeigen kann - 5 Minuten In-Memory-Cache. Zeigt
+ausschliesslich, was der Feed tatsaechlich liefert; ist er nicht
+erreichbar, zeigt das Dashboard das ehrlich als Fehler statt leerer
+Kacheln.
+
+`src/hud/commands.ts` erkennt Sprachbefehle, die nur die Dashboard-Ansicht
+umschalten (keine Bestaetigung noetig, reine Navigation, kein
+Datenzugriff): "wer ist X" / "was ist X" öffnet den Recherche-Modus mit
+X als Suchbegriff, "zeig mir X" / "wetter in X" / "flieg nach X" öffnet
+den Globus-Modus und zentriert auf X, "öffne den Globus" ohne Ziel, sowie
+"zurück" / "schließ das" zur Übersicht. Sendet dafuer das `ui_mode`-Event
+ueber den bestehenden WebSocket-Hub (`src/ws/hub.ts`) - das Dashboard
+loest Ortsnamen selbst per Geocoding auf, der Server schickt nur den
+rohen Namen, keine Koordinaten.
+
+**Testen**:
+
+```bash
+node -e "
+const { handleHudCommand } = require('./dist/hud/commands');
+(async () => {
+  console.log(await handleHudCommand('wer ist Albert Einstein'));
+  console.log(await handleHudCommand('zeig mir Paris'));
+  console.log(await handleHudCommand('zurück'));
+})();
+"
+```
+
+Jeder Aufruf gibt `{ reply }` zurueck und sendet nebenbei das `ui_mode`-
+WebSocket-Event - mit offenem Dashboard im Browser sollte der Modus
+sofort umschalten.
+
 ## Produktions-Build
 
 ```bash
@@ -326,7 +363,7 @@ npm start
 ```
 vality-server/
   config/
-    features.json     Feature-Flags (memory/presence/messages/calls)
+    features.json     Feature-Flags (memory/presence/messages/calls/news)
   src/
     config/       Umgebungsvariablen, Pfade, Feature-Flag-Loader
     stt/whisper.ts    whisper.cpp Aufruf (Speech-to-Text)
@@ -348,12 +385,17 @@ vality-server/
       commands.ts     "Ruf X an" / "Schreib X, dass..." (mit Namensaufloesung)
     contacts/
       resolve.ts      Kontakt-Anfrage/-Antwort per WebSocket ans Handy
+    news/             Feature 5: Nachrichten-Feed
+      fetchNews.ts    Tagesschau-RSS holen + parsen, 5-Min-Cache
+    hud/              Feature 5: Dashboard-Sprachsteuerung
+      commands.ts     "wer ist X"/"zeig mir X"/"öffne den Globus"/"zurück"
     shared/
       pendingAction.ts    Ein Bestaetigungs-Platz fuer SMS und Anrufe
       confirmCommands.ts  "Ja"/"Abbrechen" fuer beides
     routes/           Express-Routen (/api/voice, /api/status, /api/history,
-                      /api/presence, /api/messages, /api/contacts/resolve)
-    ws/hub.ts         WebSocket-Broadcast fuer das Dashboard
+                      /api/presence, /api/messages, /api/contacts/resolve,
+                      /api/news)
+    ws/hub.ts         WebSocket-Broadcast fuer das Dashboard (inkl. ui_mode)
     util/history.ts   In-Memory-Verlauf der letzten Interaktionen (Dashboard-Anzeige)
     index.ts          Server-Einstiegspunkt
   dashboard/      Web-Dashboard, React-Quelle (siehe dashboard/README.md)
@@ -365,10 +407,14 @@ vality-server/
 
 ## Geplante Ausbaustufen
 
-Alle vier urspruenglich geplanten Features (Gedaechtnis, Anwesenheit,
-Nachrichten, Anrufe) sind gebaut. Weiteres, noch nicht begonnen:
+Alle fuenf urspruenglich geplanten Features (Gedaechtnis, Anwesenheit,
+Nachrichten, Anrufe, Nachrichten-Feed/Dashboard-Sprachsteuerung) sind
+gebaut. Weiteres, noch nicht begonnen:
 
 - Code-/Datei-Steuerung ueber die Claude Code CLI selbst
 - System-Steuerung (Apps oeffnen, Lautstaerke)
 - Timer & Erinnerungen mit proaktiver Sprachausgabe (node-cron)
-- Wetter (Open-Meteo) & Kalender-Integration
+- Wetter als gesprochene Antwort ("wie wird das Wetter") - das Dashboard
+  zeigt Wetter bereits visuell im Globus-Modus (Open-Meteo), aber Vality
+  liest die Temperatur nicht laut vor
+- Kalender-Integration

@@ -11,6 +11,7 @@ import { statusRouter } from "./routes/status";
 import { presenceRouter } from "./routes/presence";
 import { messagesRouter } from "./routes/messages";
 import { contactsRouter } from "./routes/contacts";
+import { newsRouter } from "./routes/news";
 import { attachWebSocketServer } from "./ws/hub";
 import { loadMemory } from "./memory/store";
 import { sweepStaleFacts } from "./memory/cleanup";
@@ -53,6 +54,10 @@ async function main(): Promise<void> {
   app.use("/api", contactsRouter);
   if (features.calls) {
     console.log("Anrufe: aktiv, loest Kontaktnamen ueber die Handy-App auf.");
+  }
+  app.use("/api", newsRouter);
+  if (features.news) {
+    console.log("Nachrichten: aktiv, GET /api/news liefert den Tagesschau-Feed (5 Min. Cache).");
   }
   app.use("/audio", express.static(config.audioOutDir));
   app.use("/", express.static(path.join(__dirname, "..", "public")));

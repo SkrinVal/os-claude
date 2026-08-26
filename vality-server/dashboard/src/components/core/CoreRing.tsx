@@ -6,7 +6,7 @@ import "./CoreRing.css";
 
 const TICK_COUNT = 48;
 const BAR_COUNT = 28;
-const ORBIT_COUNT = 2;
+const ORBIT_COUNT = 3;
 
 const STATE_LABEL: Record<string, string> = {
   idle: "BEREIT",

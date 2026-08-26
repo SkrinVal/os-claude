@@ -4,6 +4,13 @@ export type ValityEvent =
   | { type: "mic_status"; listening: boolean }
   | { type: "interaction"; id: string; transcript: string; reply: string; audioUrl: string | null; ts: string }
   | { type: "error"; message: string; ts: string }
+  // Schaltet den Dashboard-Modus per Sprachbefehl um (siehe hud/commands.ts).
+  // "city" ist bewusst nur ein Name, keine Koordinaten - das Dashboard
+  // loest ihn selbst per Geocoding auf, der Server braucht dafuer keinen
+  // eigenen API-Key.
+  | { type: "ui_mode"; mode: "idle" }
+  | { type: "ui_mode"; mode: "research"; query: string }
+  | { type: "ui_mode"; mode: "globe"; city?: string }
   // Befehle an die Handy-App, ueber denselben WS-Hub wie das Dashboard -
   // das Dashboard ignoriert unbekannte type-Werte einfach.
   | { type: "send_sms"; to: string; body: string }

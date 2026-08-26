@@ -6,6 +6,7 @@ export interface FeatureFlags {
   presence: boolean;
   messages: boolean;
   calls: boolean;
+  news: boolean;
 }
 
 const FEATURES_PATH = path.resolve(__dirname, "..", "..", "config", "features.json");
@@ -15,6 +16,7 @@ const DEFAULT_FLAGS: FeatureFlags = {
   presence: false,
   messages: false,
   calls: false,
+  news: true,
 };
 
 function readFlagsSync(): FeatureFlags {

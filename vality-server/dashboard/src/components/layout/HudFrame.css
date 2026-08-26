@@ -38,6 +38,32 @@
   opacity: 0.5;
 }
 
+/* Periodischer Scan-Schimmer, der ueber den Rahmen laeuft - macht jedes
+   Panel spuerbar "aktiv", nicht nur beim Einblenden. Lange Dauer und
+   niedrige Deckkraft, damit es im Augenwinkel lebt statt abzulenken. */
+.hud-frame::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(115deg, transparent 40%, rgba(var(--accent-rgb), 0.06) 50%, transparent 60%);
+  background-size: 260% 260%;
+  background-position: 130% 130%;
+  animation: frame-shimmer 9s ease-in-out infinite;
+  animation-delay: var(--frame-delay, 0s);
+}
+
+@keyframes frame-shimmer {
+  0%,
+  60%,
+  100% {
+    background-position: 130% 130%;
+  }
+  80% {
+    background-position: -30% -30%;
+  }
+}
+
 @media (hover: hover) {
   .hud-frame:hover {
     border-color: var(--glass-border);
@@ -108,7 +134,8 @@
 
 @media (prefers-reduced-motion: reduce) {
   .hud-frame,
-  .hud-frame__corner {
+  .hud-frame__corner,
+  .hud-frame::after {
     animation: none !important;
     opacity: 1;
   }

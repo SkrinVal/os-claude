@@ -1,6 +1,13 @@
 .core-ring {
   position: relative;
   flex-shrink: 0;
+  /* Nur der Knopf selbst soll klickbar sein - Halo/Puls/SVG-Deko duerfen
+     nie Klicks auf benachbarte UI abfangen (bleiben ueber inset/blur
+     absichtlich groesser als der Ring). */
+  pointer-events: none;
+}
+.core-ring__button {
+  pointer-events: auto;
 }
 
 .core-ring__halo {

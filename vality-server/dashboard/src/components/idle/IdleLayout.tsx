@@ -2,6 +2,7 @@ import CoreRing from "../core/CoreRing";
 import LogPanel from "./LogPanel";
 import SystemPanel from "./SystemPanel";
 import QuickActionsPanel from "./QuickActionsPanel";
+import NewsPanel from "./NewsPanel";
 import "./IdleLayout.css";
 
 export default function IdleLayout() {
@@ -18,6 +19,7 @@ export default function IdleLayout() {
 
       <div className="idle-layout__aside idle-layout__aside--right">
         <LogPanel delay={0.1} />
+        <NewsPanel delay={0.18} />
       </div>
     </div>
   );

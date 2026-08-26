@@ -4,8 +4,7 @@ import { HudStoreProvider, useHudDispatch, useHudState } from "./state/store";
 import { useVoiceSocket, type UiModeEvent } from "./hooks/useVoiceSocket";
 import { useSystemStatus, useInitialHistory } from "./hooks/useSystemStatus";
 import { runResearch } from "./services/wikipedia";
-import { focusCity } from "./services/weather";
-import { CITIES } from "./data/cities";
+import { geocodeAndFocusCity } from "./services/geocoding";
 import TopBar from "./components/layout/TopBar";
 import ErrorToast from "./components/layout/ErrorToast";
 import IdleLayout from "./components/idle/IdleLayout";
@@ -36,8 +35,9 @@ function Dashboard() {
         runResearch(dispatch, event.query);
       } else if (event.mode === "globe") {
         dispatch({ type: "SET_MODE", mode: "globe" });
-        const known = CITIES.find((c) => c.id === event.city.id) ?? event.city;
-        focusCity(dispatch, known);
+        if (event.city) {
+          geocodeAndFocusCity(dispatch, event.city);
+        }
       }
     },
     [dispatch]

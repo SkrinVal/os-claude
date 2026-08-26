@@ -15,7 +15,7 @@ type IncomingEvent =
 export type UiModeEvent =
   | { type: "ui_mode"; mode: "idle" }
   | { type: "ui_mode"; mode: "research"; query: string }
-  | { type: "ui_mode"; mode: "globe"; city: { id: string; name: string; country: string; lat: number; lng: number } };
+  | { type: "ui_mode"; mode: "globe"; city?: string };
 
 export function useVoiceSocket(onModeEvent?: (event: UiModeEvent) => void) {
   const dispatch = useHudDispatch();

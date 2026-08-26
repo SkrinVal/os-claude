@@ -16,6 +16,7 @@ import { recordConversationTurn } from "../memory/store";
 import { handleMessageCommand } from "../messages/commands";
 import { handleCallCommand } from "../calls/commands";
 import { handleConfirmCommand } from "../shared/confirmCommands";
+import { handleHudCommand } from "../hud/commands";
 
 export const voiceRouter = Router();
 
@@ -44,8 +45,10 @@ voiceRouter.post("/voice", upload.single("audio"), async (req, res) => {
       !confirmResult && features.messages ? await handleMessageCommand(transcript) : null;
     const callResult =
       !confirmResult && !messageResult && features.calls ? await handleCallCommand(transcript) : null;
+    const hudResult =
+      !confirmResult && !messageResult && !callResult ? await handleHudCommand(transcript) : null;
     const memoryResult =
-      !confirmResult && !messageResult && !callResult && features.memory
+      !confirmResult && !messageResult && !callResult && !hudResult && features.memory
         ? await handleMemoryCommand(transcript)
         : null;
 
@@ -56,6 +59,8 @@ voiceRouter.post("/voice", upload.single("audio"), async (req, res) => {
       reply = messageResult.reply;
     } else if (callResult) {
       reply = callResult.reply;
+    } else if (hudResult) {
+      reply = hudResult.reply;
     } else if (memoryResult) {
       reply = memoryResult.reply;
     } else if (features.memory) {

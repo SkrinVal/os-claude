@@ -2,5 +2,6 @@
   "memory": true,
   "presence": false,
   "messages": false,
-  "calls": false
+  "calls": false,
+  "news": true
 }

@@ -14,13 +14,14 @@ aus, genau wie vorher.
   zentralen `mode`-State und alle Modus-Daten.
 - **Framer Motion** fuer alle Layout-Uebergaenge (Core-Ring-Bewegung,
   Karten-Ein-/Ausblenden).
-- **react-globe.gl** (Globus-Modus, noch nicht gebaut) — Erdtextur liegt
-  lokal unter `public/textures/earth-night.jpg` (aus `three-globe`
-  kopiert), kein externer CDN-Abruf zur Laufzeit noetig.
+- **react-globe.gl** (Globus-Modus) — Erdtextur liegt lokal unter
+  `public/textures/earth-night.jpg` (aus `three-globe` kopiert), kein
+  externer CDN-Abruf zur Laufzeit noetig. Als eigener Lazy-Chunk geladen
+  (three.js ist schwer), Idle/Recherche bleiben davon unberuehrt.
 - **WebSocket** zum selben Hub, den auch die Handy-App nutzt
-  (`src/hooks/useVoiceSocket.ts`). Neuer, vom Backend noch nicht gesendeter
-  Event-Typ `ui_mode` ist schon vorbereitet, fuer wenn Recherche-/Globus-
-  Trigger serverseitig gebaut werden.
+  (`src/hooks/useVoiceSocket.ts`). Der Event-Typ `ui_mode` schaltet den
+  Modus per Sprachbefehl um (`src/hud/commands.ts` im Server erkennt "wer
+  ist X", "zeig mir X", "wetter in X", "öffne den Globus", "zurück" ...).
 
 ## Farbpalette
 
@@ -105,12 +106,35 @@ ist beim Bauen tatsaechlich passiert, siehe Commit-Historie).
    (`mode`, `voiceState`, `connected`, ...) - nuetzlich, um zu sehen, ob
    WebSocket-Events wirklich ankommen, ohne die Konsole zu oeffnen.
 
-## Noch nicht gebaut
+## Modus 2: „research" (fertig)
 
-- **Modus „research"**: Ring verkleinert sich in eine Ecke, Steckbrief-
-  Karten in der Hauptflaeche (abstrakte Avatare statt echter Fotos).
-- **Modus „globe"**: 3D-Globus mit anklickbaren Staedte-Markern, Flug-
-  Animation, Wetter-Overlay.
-- Backend-seitige Ausloeser fuer beide Modi (Intent-Erkennung "wer ist X",
-  "Wetter in X", "öffne die Weltkarte") - bisher nur der `ui_mode`
-  WebSocket-Event-Typ als Vertrag vorbereitet, niemand sendet ihn noch.
+Ring verkleinert sich in die Ecke, Suchfeld gegen die echte deutsche
+Wikipedia-REST-API (`src/services/wikipedia.ts`, mit Fallback-Suche bei
+Nichttreffer). Steckbrief-Karte zeigt nie ein echtes Foto - stattdessen
+einen rein geometrisch aus dem Namen generierten Avatar
+(`AbstractAvatar.tsx`).
+
+## Modus 3: „globe" (fertig)
+
+3D-Globus mit Naechte-Textur, Sternenfeld, sanfter Auto-Rotation (haelt
+an, sobald eine Stadt fokussiert ist), pulsierendem Ring am fokussierten
+Ort. Feste Staedte-Liste (`src/data/cities.ts`) plus freies Suchfeld -
+jeder Ort der Welt laesst sich per echter Open-Meteo-Geocoding-API
+finden, nicht nur die Vorauswahl. Wetter-Overlay ueber die echte
+Open-Meteo-Wetter-API.
+
+## Sprachsteuerung
+
+`src/hud/commands.ts` im Server erkennt (vor der allgemeinen
+Claude-Antwort) u.a.:
+
+- "wer ist X" / "was ist X" / "erzähl mir von X" → Recherche-Modus
+- "zeig mir X" / "wo ist X" / "wetter in X" / "flieg nach X" → Globus-Modus
+- "öffne den Globus" / "öffne die Weltkarte" → Globus ohne bestimmte Stadt
+- "zurück" / "schließ den Globus" / "startbildschirm" → zurueck zur
+  Uebersicht
+
+Sendet das `ui_mode`-WebSocket-Event, das `useVoiceSocket.ts` im Frontend
+entgegennimmt. Bis diese Trigger auch per Sprache getestet werden koennen
+(Whisper noetig), laesst sich jeder Modus zusaetzlich ueber die
+Debug-Panel-Knoepfe direkt anspringen.
