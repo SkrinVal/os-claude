@@ -13,6 +13,7 @@ import { messagesRouter } from "./routes/messages";
 import { contactsRouter } from "./routes/contacts";
 import { newsRouter } from "./routes/news";
 import { briefingRouter } from "./routes/briefing";
+import { memoryRouter } from "./routes/memory";
 import { attachWebSocketServer } from "./ws/hub";
 import { loadMemory } from "./memory/store";
 import { sweepStaleFacts } from "./memory/cleanup";
@@ -62,6 +63,10 @@ async function main(): Promise<void> {
   }
   app.use("/api", briefingRouter);
   console.log("Briefing: aktiv, POST /api/briefing liefert die gesprochene Begruessung beim Oeffnen.");
+  app.use("/api", memoryRouter);
+  if (features.memory) {
+    console.log("Gedaechtnis: aktiv, GET /api/memory/facts liefert gemerkte + gelernte Fakten fuers Dashboard.");
+  }
   app.use("/audio", express.static(config.audioOutDir));
   app.use("/", express.static(path.join(__dirname, "..", "public")));
 

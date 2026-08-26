@@ -53,13 +53,13 @@ export function getActiveFacts(): Fact[] {
   return facts.filter((f) => f.status === "active");
 }
 
-export async function addFact(category: string, content: string): Promise<Fact> {
+export async function addFact(category: string, content: string, source: Fact["source"] = "explicit"): Promise<Fact> {
   const now = new Date().toISOString();
   const fact: Fact = {
     id: randomUUID(),
     category,
     content,
-    source: "explicit",
+    source,
     createdAt: now,
     lastReferencedAt: now,
     referenceCount: 0,
@@ -68,6 +68,23 @@ export async function addFact(category: string, content: string): Promise<Fact> 
   facts.push(fact);
   await persistFacts();
   return fact;
+}
+
+// Grobe Wortueberlappung (kein Embedding/keine echte Semantik noetig fuer
+// eine einzelne lokale Faktenliste) - verhindert, dass ein beilaeufig
+// wiederholtes "Ich mag Kaffee" nach jedem Gespraech erneut gespeichert
+// wird.
+function wordOverlap(a: string, b: string): number {
+  const wordsA = new Set(a.toLowerCase().split(/\s+/).filter(Boolean));
+  const wordsB = new Set(b.toLowerCase().split(/\s+/).filter(Boolean));
+  if (wordsA.size === 0 || wordsB.size === 0) return 0;
+  let shared = 0;
+  for (const w of wordsA) if (wordsB.has(w)) shared++;
+  return shared / Math.max(wordsA.size, wordsB.size);
+}
+
+export function hasSimilarFact(content: string, threshold = 0.6): boolean {
+  return getActiveFacts().some((f) => wordOverlap(f.content, content) >= threshold);
 }
 
 // Findet aktive Fakten, deren Inhalt oder Kategorie das Suchwort enthaelt.
