@@ -123,7 +123,36 @@
 }
 
 .hud-frame__title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
   margin: 0 0 14px;
+}
+
+/* Kleiner pulsierender Glyph vor jedem Panel-Titel - greift die
+   bio-lumineszente Sprache des Core-Rings auf und zieht sich als
+   wiederkehrendes Motiv durchs ganze HUD. */
+.hud-frame__title-glyph {
+  width: 5px;
+  height: 5px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 5px rgba(var(--accent-rgb), 0.9);
+  animation: title-glyph-pulse 2.8s ease-in-out infinite;
+  animation-delay: var(--frame-delay, 0s);
+}
+
+@keyframes title-glyph-pulse {
+  0%,
+  100% {
+    opacity: 0.5;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
 }
 
 .hud-frame__body {
@@ -135,6 +164,7 @@
 @media (prefers-reduced-motion: reduce) {
   .hud-frame,
   .hud-frame__corner,
+  .hud-frame__title-glyph,
   .hud-frame::after {
     animation: none !important;
     opacity: 1;

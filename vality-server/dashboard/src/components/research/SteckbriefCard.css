@@ -11,9 +11,10 @@
 
 .steckbrief-card__name {
   margin: 0 0 4px;
-  font-size: 19px;
+  font-size: 20px;
   font-weight: 700;
   color: var(--text);
+  text-shadow: 0 0 18px rgba(var(--accent-rgb), 0.18);
 }
 
 .steckbrief-card__kind {
@@ -64,4 +65,8 @@
 }
 .steckbrief-card__source:hover {
   border-color: var(--accent);
+}
+.steckbrief-card__source:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }

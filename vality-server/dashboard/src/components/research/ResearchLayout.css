@@ -32,6 +32,10 @@
   color: var(--accent);
   border-color: var(--accent-dim);
 }
+.research-layout__back:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
 
 .research-layout__body {
   max-width: 640px;
