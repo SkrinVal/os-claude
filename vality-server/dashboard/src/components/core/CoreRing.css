@@ -12,28 +12,28 @@
 
 .core-ring__halo {
   position: absolute;
-  inset: -12%;
+  inset: -14%;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(var(--accent-rgb), 0.16), transparent 68%);
-  filter: blur(4px);
+  background: radial-gradient(circle, rgba(var(--accent-rgb), 0.2), transparent 68%);
+  filter: blur(6px);
   animation: core-breathe 3.4s ease-in-out infinite;
   z-index: 0;
 }
 .core-ring[data-state="thinking"] .core-ring__halo--a {
-  background: radial-gradient(circle, rgba(var(--warn-rgb), 0.2), transparent 68%);
+  background: radial-gradient(circle, rgba(var(--warn-rgb), 0.24), transparent 68%);
   animation-duration: 1.1s;
 }
 .core-ring[data-state="error"] .core-ring__halo--a {
-  background: radial-gradient(circle, rgba(var(--danger-rgb), 0.22), transparent 68%);
+  background: radial-gradient(circle, rgba(var(--danger-rgb), 0.26), transparent 68%);
 }
 
 /* Zweite, groessere und langsamere Bloom-Schicht im Zweitakzent - traegt
    fuers Auge kaum wahrnehmbar zur Tiefe bei, ohne die Akzentfarbe zu
    verwaessern. */
 .core-ring__halo--b {
-  inset: -26%;
-  background: radial-gradient(circle, rgba(var(--accent-2-rgb), 0.1), transparent 72%);
-  filter: blur(14px);
+  inset: -28%;
+  background: radial-gradient(circle, rgba(var(--accent-2-rgb), 0.12), transparent 72%);
+  filter: blur(16px);
   animation: core-breathe 5.6s ease-in-out infinite;
   animation-delay: -2.1s;
 }
@@ -41,10 +41,10 @@
 @keyframes core-breathe {
   0%,
   100% {
-    opacity: 0.45;
+    opacity: 0.5;
   }
   50% {
-    opacity: 0.9;
+    opacity: 1;
   }
 }
 
@@ -82,58 +82,75 @@
   height: 100%;
   display: block;
   z-index: 1;
+  overflow: visible;
 }
 
-.core-ring__ring {
+/* Wabernde Membran statt technischem Kreisring - zwei leicht
+   unregelmaessige Konturen, gegenlaeufig und sehr langsam rotierend, dazu
+   ein zusaetzliches, laengeres Puls-Timing auf dem Filter, damit die Form
+   nie ganz stillsteht. */
+.core-ring__membrane {
   fill: none;
-  stroke: var(--accent-dim);
-  stroke-width: 1;
-}
-.core-ring__ring--outer {
-  stroke-dasharray: 4 10;
-  animation: core-spin 42s linear infinite;
+  stroke: var(--accent);
+  filter: drop-shadow(0 0 6px rgba(var(--accent-rgb), 0.55));
   transform-origin: 100px 100px;
 }
-.core-ring__ring--mid {
-  stroke-dasharray: 2 7;
-  animation: core-spin-rev 28s linear infinite;
-  transform-origin: 100px 100px;
+.core-ring__membrane--outer {
+  stroke-width: 1.4;
+  opacity: 0.75;
+  animation:
+    core-spin 64s linear infinite,
+    membrane-pulse 7s ease-in-out infinite;
 }
-.core-ring__ring--inner {
-  stroke: var(--accent);
-  stroke-width: 1.5;
-  opacity: 0.7;
-}
-
-.core-ring[data-state="listening"] .core-ring__ring--outer,
-.core-ring[data-state="listening"] .core-ring__ring--mid {
-  animation-duration: 10s;
-}
-.core-ring[data-state="thinking"] .core-ring__ring--outer,
-.core-ring[data-state="thinking"] .core-ring__ring--mid {
-  animation-duration: 3s;
-}
-
-@keyframes core-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-@keyframes core-spin-rev {
-  to {
-    transform: rotate(-360deg);
-  }
-}
-
-.core-ring__tick {
-  stroke: var(--accent-dim);
+.core-ring__membrane--inner {
   stroke-width: 1;
-  opacity: 0.55;
+  opacity: 0.45;
+  animation:
+    core-spin-rev 48s linear infinite,
+    membrane-pulse 5.5s ease-in-out infinite reverse;
 }
-.core-ring__tick--major {
+@keyframes membrane-pulse {
+  0%,
+  100% {
+    stroke-width: 1;
+  }
+  50% {
+    stroke-width: 1.8;
+  }
+}
+.core-ring[data-state="thinking"] .core-ring__membrane {
+  stroke: var(--warn);
+  filter: drop-shadow(0 0 6px rgba(var(--warn-rgb), 0.55));
+}
+.core-ring[data-state="error"] .core-ring__membrane {
+  stroke: var(--danger);
+  filter: drop-shadow(0 0 6px rgba(var(--danger-rgb), 0.55));
+}
+.core-ring[data-state="listening"] .core-ring__membrane--outer,
+.core-ring[data-state="listening"] .core-ring__membrane--inner {
+  animation-duration: 16s, 3.4s;
+}
+
+.core-ring__ribs {
+  transform-origin: 100px 100px;
+  animation: core-spin-rev 90s linear infinite;
+}
+.core-ring__rib {
+  stroke: var(--accent-dim);
+  stroke-width: 2;
+  stroke-linecap: round;
+  opacity: 0.5;
+}
+.core-ring__rib--major {
   stroke: var(--accent);
-  stroke-width: 1.5;
+  stroke-width: 2.6;
   opacity: 0.85;
+}
+.core-ring[data-state="thinking"] .core-ring__rib--major {
+  stroke: var(--warn);
+}
+.core-ring[data-state="error"] .core-ring__rib--major {
+  stroke: var(--danger);
 }
 
 /* Reaktiver "Spektrum"-Kranz: Grundlaenge per CSS, Ausschlag per Inline-
@@ -192,12 +209,66 @@
   filter: drop-shadow(0 0 3px rgba(var(--danger-rgb), 0.9));
 }
 
+@keyframes core-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes core-spin-rev {
+  to {
+    transform: rotate(-360deg);
+  }
+}
+
+/* Kern-Sphaere: Hex-Netzwerk + Funken statt eines leeren Kreises. */
+.core-ring__sphere-edge {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1;
+  opacity: 0.5;
+  animation: core-breathe 4.2s ease-in-out infinite;
+}
+.core-ring[data-state="thinking"] .core-ring__sphere-edge {
+  stroke: var(--warn);
+}
+.core-ring[data-state="error"] .core-ring__sphere-edge {
+  stroke: var(--danger);
+}
+
+.core-ring__hexdots circle {
+  fill: var(--accent);
+}
+.core-ring[data-state="thinking"] .core-ring__hexdots circle {
+  fill: var(--warn);
+}
+.core-ring[data-state="error"] .core-ring__hexdots circle {
+  fill: var(--danger);
+}
+
+.core-ring__sparkle {
+  fill: #fff;
+  filter: drop-shadow(0 0 3px rgba(var(--accent-rgb), 0.95));
+  animation: spark-blink 2.6s ease-in-out infinite;
+  animation-delay: var(--spark-delay, 0s);
+}
+@keyframes spark-blink {
+  0%,
+  100% {
+    opacity: 0.15;
+    transform: scale(0.6);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+}
+
 .core-ring__button {
   position: absolute;
   inset: 15%;
   z-index: 2;
   border-radius: 50%;
-  background: radial-gradient(circle at 50% 38%, var(--accent-soft), rgba(var(--accent-rgb), 0.02));
+  background: radial-gradient(circle at 50% 38%, rgba(var(--accent-rgb), 0.06), rgba(var(--accent-rgb), 0.01));
   border: 1px solid var(--accent-dim);
   color: var(--accent);
   cursor: pointer;
@@ -221,7 +292,7 @@
   inset: 6% 12% auto 12%;
   height: 38%;
   border-radius: 50%;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent 75%);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent 75%);
   pointer-events: none;
 }
 .core-ring__button:active {
@@ -273,6 +344,7 @@
   font-weight: 700;
   letter-spacing: 0.22em;
   color: var(--accent);
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.85);
 }
 
 .core-ring__status {
@@ -286,6 +358,7 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.85);
 }
 
 .core-ring__action {
@@ -297,6 +370,7 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.85);
 }
 
 .core-ring__status-dot {
@@ -340,16 +414,22 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .core-ring__ring--outer,
-  .core-ring__ring--mid,
+  .core-ring__membrane,
+  .core-ring__ribs,
   .core-ring__halo,
   .core-ring__pulse,
   .core-ring__bar,
   .core-ring__orbit,
+  .core-ring__sphere-edge,
+  .core-ring__sparkle,
   .core-ring__button {
     animation: none !important;
   }
   .core-ring__pulse {
     opacity: 0 !important;
+  }
+  .core-ring__sparkle {
+    opacity: 0.7 !important;
+    transform: none !important;
   }
 }

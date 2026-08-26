@@ -39,6 +39,10 @@
   color: var(--text);
   border-color: var(--accent-dim);
 }
+.debug-panel__mode-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
 .debug-panel__mode-btn--active {
   border-color: var(--accent);
   color: var(--accent);
