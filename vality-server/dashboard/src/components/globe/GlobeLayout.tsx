@@ -4,9 +4,11 @@ import { useHudDispatch, useHudState } from "../../state/store";
 import { CITIES } from "../../data/cities";
 import { focusCity } from "../../services/weather";
 import { geocodeAndFocusCity } from "../../services/geocoding";
+import { useLocationNews } from "../../hooks/useLocationNews";
 import CoreRing from "../core/CoreRing";
 import HudFrame from "../layout/HudFrame";
 import Skeleton from "../layout/Skeleton";
+import NewsList from "../shared/NewsList";
 import type { CityMarker } from "../../state/types";
 import "./GlobeLayout.css";
 
@@ -74,6 +76,16 @@ export default function GlobeLayout() {
     setSearching(true);
     geocodeAndFocusCity(dispatch, trimmed).finally(() => setSearching(false));
   }
+
+  // Nachrichten brauchen nur den Namen, keine Koordinaten - laufen also
+  // schon los, waehrend die Geokodierung/das Wetter noch unterwegs sind.
+  // Sobald das Land bekannt ist, wird die Suche praeziser (zweiter Ort
+  // gleichen Namens auf einem anderen Kontinent liefert dann nicht mehr
+  // die falschen Treffer).
+  const newsQuery = globe.focusCity
+    ? [globe.focusCity.name, globe.focusCity.country].filter(Boolean).join(" ")
+    : null;
+  const { items: locationNews, loading: newsLoading, error: newsError } = useLocationNews(newsQuery);
 
   // Jede frei gesuchte Stadt bekommt ebenfalls einen echten Marker auf dem
   // Globus, nicht nur die feste Liste - "keine Vorschlaege wie Berlin",
@@ -188,6 +200,19 @@ export default function GlobeLayout() {
                 WIND {Math.round(globe.weather.windKph)} KM/H · {globe.weather.isDay ? "TAG" : "NACHT"}
               </div>
             </div>
+          )}
+        </HudFrame>
+
+        <HudFrame title="Nachrichten vor Ort" className="globe-layout__news" delay={0.15}>
+          {!globe.focusCity && <p className="globe-layout__hint mono">Stadt auswählen.</p>}
+          {globe.focusCity && (
+            <NewsList
+              items={locationNews}
+              loading={newsLoading}
+              error={newsError}
+              emptyHint={`Keine Meldungen zu ${globe.focusCity.name} gefunden.`}
+              skeletonCount={3}
+            />
           )}
         </HudFrame>
       </div>

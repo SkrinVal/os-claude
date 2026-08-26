@@ -1,16 +1,8 @@
-import { AnimatePresence, motion } from "framer-motion";
 import { useHudDispatch } from "../../state/store";
 import { useNews } from "../../hooks/useNews";
 import HudFrame from "../layout/HudFrame";
-import Skeleton from "../layout/Skeleton";
+import NewsList from "../shared/NewsList";
 import "./NewsPanel.css";
-
-function formatTime(pubDate: string | null): string {
-  if (!pubDate) return "";
-  const d = new Date(pubDate);
-  if (Number.isNaN(d.getTime())) return "";
-  return d.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
-}
 
 export default function NewsPanel({ delay }: { delay?: number }) {
   const { items, loading, error } = useNews();
@@ -32,42 +24,7 @@ export default function NewsPanel({ delay }: { delay?: number }) {
         </button>
       </div>
 
-      <div className="news-panel__list">
-        {loading && items.length === 0 && (
-          <div className="news-panel__skeletons">
-            {[0, 1, 2, 3].map((i) => (
-              <div key={i} className="news-panel__skeleton-item">
-                <Skeleton height={13} width={`${86 - i * 6}%`} />
-                <Skeleton height={9} width="40%" />
-              </div>
-            ))}
-          </div>
-        )}
-        {!loading && error && <p className="news-panel__hint news-panel__hint--error mono">{error}</p>}
-        {!loading && !error && items.length === 0 && (
-          <p className="news-panel__hint mono">Keine Meldungen verfügbar.</p>
-        )}
-        <AnimatePresence initial={false}>
-          {items.map((item, i) => (
-            <motion.a
-              key={item.link}
-              className="news-panel__item"
-              href={item.link}
-              target="_blank"
-              rel="noreferrer"
-              initial={{ opacity: 0, x: -8 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.3, delay: i * 0.04, ease: [0.22, 0.9, 0.32, 1] }}
-            >
-              <span className="news-panel__item-title">{item.title}</span>
-              <span className="news-panel__item-meta mono">
-                {item.source}
-                {formatTime(item.pubDate) && ` · ${formatTime(item.pubDate)}`}
-              </span>
-            </motion.a>
-          ))}
-        </AnimatePresence>
-      </div>
+      <NewsList items={items} loading={loading} error={error} emptyHint="Keine Meldungen verfügbar." />
     </HudFrame>
   );
 }
