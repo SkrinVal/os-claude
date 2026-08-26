@@ -1,0 +1,9 @@
+.abstract-avatar {
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 1px var(--line-bright);
+}
+.abstract-avatar svg {
+  display: block;
+}

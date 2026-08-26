@@ -15,6 +15,36 @@
   margin: 0 0 12px;
 }
 
+.debug-panel__modes {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+.debug-panel__mode-btn {
+  flex: 1;
+  background: var(--bg-inset);
+  border: 1px solid var(--line-bright);
+  color: var(--text-dim);
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  padding: 7px 4px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition:
+    border-color 0.2s,
+    color 0.2s,
+    background 0.2s;
+}
+.debug-panel__mode-btn:hover {
+  color: var(--text);
+  border-color: var(--accent-dim);
+}
+.debug-panel__mode-btn--active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
 .debug-panel__grid {
   display: grid;
   grid-template-columns: auto 1fr;

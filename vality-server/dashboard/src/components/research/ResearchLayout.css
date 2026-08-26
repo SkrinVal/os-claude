@@ -1,0 +1,108 @@
+.research-layout {
+  position: relative;
+  height: 100%;
+  overflow-y: auto;
+  padding: 90px 20px 40px;
+}
+
+.research-layout__corner {
+  position: fixed;
+  top: 78px;
+  right: 24px;
+  z-index: 4;
+}
+
+.research-layout__back {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  background: transparent;
+  border: 1px solid var(--line-bright);
+  color: var(--text-dim);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  padding: 7px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition:
+    color 0.2s,
+    border-color 0.2s;
+}
+.research-layout__back:hover {
+  color: var(--accent);
+  border-color: var(--accent-dim);
+}
+
+.research-layout__body {
+  max-width: 640px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.research-layout__title {
+  margin: 0;
+  text-align: center;
+}
+
+.research-layout__search {
+  display: flex;
+  gap: 10px;
+}
+.research-layout__search input {
+  flex: 1;
+  background: var(--bg-inset);
+  border: 1px solid var(--line-bright);
+  color: var(--text);
+  font-size: 14px;
+  padding: 12px 14px;
+  border-radius: 6px;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+.research-layout__search input:focus-visible {
+  border-color: var(--accent);
+}
+.research-layout__search button {
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-dim);
+  color: var(--accent);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  padding: 0 18px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    border-color 0.2s;
+}
+.research-layout__search button:hover:not(:disabled) {
+  background: rgba(var(--accent-rgb), 0.22);
+  border-color: var(--accent);
+}
+.research-layout__search button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.research-layout__status {
+  text-align: center;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: var(--text-faint);
+}
+.research-layout__status--error {
+  color: var(--danger);
+}
+
+@media (max-width: 720px) {
+  .research-layout__corner {
+    top: auto;
+    bottom: 20px;
+    right: 20px;
+  }
+  .research-layout {
+    padding-top: 70px;
+  }
+}

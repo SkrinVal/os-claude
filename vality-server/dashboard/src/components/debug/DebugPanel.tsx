@@ -1,12 +1,21 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { useHudState } from "../../state/store";
+import { useHudDispatch, useHudState } from "../../state/store";
+import type { HudMode } from "../../state/types";
 import "./DebugPanel.css";
 
-// Entwickler-Einblick in den aktuellen State, plus (sobald gebaut) die
-// manuellen Modus-Trigger fuer research/globe, solange das Backend noch
-// keine echten Ausloeser dafuer sendet.
+const MODES: { id: HudMode; label: string }[] = [
+  { id: "idle", label: "Idle" },
+  { id: "research", label: "Recherche" },
+  { id: "globe", label: "Globus" },
+];
+
+// Entwickler-Einblick in den aktuellen State, plus manueller Modus-
+// Umschalter fuer research/globe, solange das Backend noch keine echten
+// Sprachbefehl-Ausloeser dafuer sendet ("ui_mode"-Event, vorbereitet in
+// useVoiceSocket.ts, aber noch nicht serverseitig gebaut).
 export default function DebugPanel({ open }: { open: boolean }) {
   const state = useHudState();
+  const dispatch = useHudDispatch();
 
   return (
     <AnimatePresence>
@@ -19,6 +28,20 @@ export default function DebugPanel({ open }: { open: boolean }) {
           transition={{ duration: 0.25, ease: [0.22, 0.9, 0.32, 1] }}
         >
           <h2 className="eyebrow debug-panel__title">Debug</h2>
+
+          <div className="debug-panel__modes">
+            {MODES.map((m) => (
+              <button
+                key={m.id}
+                type="button"
+                className={`debug-panel__mode-btn mono${state.mode === m.id ? " debug-panel__mode-btn--active" : ""}`}
+                onClick={() => dispatch({ type: "SET_MODE", mode: m.id })}
+              >
+                {m.label}
+              </button>
+            ))}
+          </div>
+
           <dl className="debug-panel__grid mono">
             <dt>mode</dt>
             <dd>{state.mode}</dd>
@@ -32,9 +55,9 @@ export default function DebugPanel({ open }: { open: boolean }) {
             <dd>{state.micLevel.toFixed(2)}</dd>
           </dl>
           <p className="debug-panel__note">
-            Modus-Umschalter für „research" und „globe" folgen mit diesen
-            Ausbaustufen. Bis dahin steuert nur das Backend-Event
-            „ui_mode" (noch nicht gesendet) oder direkte State-Tests.
+            Recherche/Globus lassen sich hier schon testen. Ausgeloest werden
+            sie spaeter per Sprachbefehl - das Backend-Event „ui_mode" dafuer
+            ist vorbereitet, aber noch nicht gesendet.
           </p>
         </motion.aside>
       )}

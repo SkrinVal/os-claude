@@ -10,11 +10,14 @@ type IncomingEvent =
   | { type: "mic_status"; listening: boolean }
   | { type: "interaction"; id: string; transcript: string; reply: string; audioUrl: string | null; ts: string }
   | { type: "error"; message: string; ts: string }
+  | UiModeEvent;
+
+export type UiModeEvent =
   | { type: "ui_mode"; mode: "idle" }
   | { type: "ui_mode"; mode: "research"; query: string }
   | { type: "ui_mode"; mode: "globe"; city: { id: string; name: string; country: string; lat: number; lng: number } };
 
-export function useVoiceSocket(onModeEvent?: (event: Extract<IncomingEvent, { type: "ui_mode" }>) => void) {
+export function useVoiceSocket(onModeEvent?: (event: UiModeEvent) => void) {
   const dispatch = useHudDispatch();
   const { audioMuted } = useHudState();
   const onModeEventRef = useRef(onModeEvent);

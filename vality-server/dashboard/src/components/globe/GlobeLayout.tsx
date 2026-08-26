@@ -1,0 +1,121 @@
+import { useEffect, useRef, useState } from "react";
+import Globe, { type GlobeMethods } from "react-globe.gl";
+import { useHudDispatch, useHudState } from "../../state/store";
+import { CITIES } from "../../data/cities";
+import { focusCity } from "../../services/weather";
+import CoreRing from "../core/CoreRing";
+import HudFrame from "../layout/HudFrame";
+import type { CityMarker } from "../../state/types";
+import "./GlobeLayout.css";
+
+export default function GlobeLayout() {
+  const { globe } = useHudState();
+  const dispatch = useHudDispatch();
+  const containerRef = useRef<HTMLDivElement>(null);
+  const globeRef = useRef<GlobeMethods | undefined>(undefined);
+  const [size, setSize] = useState({ width: 400, height: 400 });
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (entry) setSize({ width: entry.contentRect.width, height: entry.contentRect.height });
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    // Falls der Modus bereits mit einer fokussierten Stadt startet (z.B.
+    // per Sprachbefehl-Event), direkt dorthin fliegen statt zur Standard-
+    // Ansicht.
+    if (globe.focusCity) {
+      globeRef.current?.pointOfView({ lat: globe.focusCity.lat, lng: globe.focusCity.lng, altitude: 1.1 }, 0);
+    } else {
+      globeRef.current?.pointOfView({ lat: 20, lng: 10, altitude: 2.2 }, 0);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function selectCity(city: CityMarker) {
+    globeRef.current?.pointOfView({ lat: city.lat, lng: city.lng, altitude: 1.1 }, 1400);
+    focusCity(dispatch, city);
+  }
+
+  return (
+    <div className="globe-layout">
+      <div className="globe-layout__corner">
+        <CoreRing expanded={false} />
+      </div>
+
+      <button
+        type="button"
+        className="globe-layout__back mono"
+        onClick={() => dispatch({ type: "SET_MODE", mode: "idle" })}
+      >
+        ← ZURÜCK
+      </button>
+
+      <div className="globe-layout__globe" ref={containerRef}>
+        <Globe
+          ref={globeRef}
+          width={size.width}
+          height={size.height}
+          backgroundColor="rgba(0,0,0,0)"
+          globeImageUrl="./textures/earth-night.jpg"
+          showAtmosphere
+          atmosphereColor="#22d3ee"
+          atmosphereAltitude={0.18}
+          labelsData={CITIES}
+          labelLat={(d) => (d as CityMarker).lat}
+          labelLng={(d) => (d as CityMarker).lng}
+          labelText={(d) => (d as CityMarker).name}
+          labelSize={1.1}
+          labelDotRadius={0.45}
+          labelColor={(d) => ((d as CityMarker).id === globe.focusCity?.id ? "#22d3ee" : "rgba(238,240,244,0.75)")}
+          labelResolution={2}
+          onLabelClick={(d) => selectCity(d as CityMarker)}
+        />
+      </div>
+
+      <div className="globe-layout__overlay">
+        <HudFrame title="Städte" className="globe-layout__cities">
+          <div className="globe-layout__city-list">
+            {CITIES.map((city) => (
+              <button
+                key={city.id}
+                type="button"
+                className={`globe-layout__city-btn mono${city.id === globe.focusCity?.id ? " globe-layout__city-btn--active" : ""}`}
+                onClick={() => selectCity(city)}
+              >
+                {city.name}
+              </button>
+            ))}
+          </div>
+        </HudFrame>
+
+        <HudFrame title="Wetter" className="globe-layout__weather" delay={0.06}>
+          {!globe.focusCity && <p className="globe-layout__hint mono">Stadt auswählen.</p>}
+          {globe.focusCity && globe.loading && <p className="globe-layout__hint mono">LÄDT…</p>}
+          {globe.focusCity && !globe.loading && globe.error && (
+            <p className="globe-layout__hint globe-layout__hint--error mono">{globe.error}</p>
+          )}
+          {globe.focusCity && !globe.loading && globe.weather && (
+            <div className="globe-layout__weather-body">
+              <div className="globe-layout__weather-city">
+                {globe.weather.city.name}
+                <span className="globe-layout__weather-country">{globe.weather.city.country}</span>
+              </div>
+              <div className="globe-layout__weather-temp mono">{Math.round(globe.weather.temperatureC)}°C</div>
+              <div className="globe-layout__weather-desc">{globe.weather.description}</div>
+              <div className="globe-layout__weather-meta mono">
+                WIND {Math.round(globe.weather.windKph)} KM/H · {globe.weather.isDay ? "TAG" : "NACHT"}
+              </div>
+            </div>
+          )}
+        </HudFrame>
+      </div>
+    </div>
+  );
+}

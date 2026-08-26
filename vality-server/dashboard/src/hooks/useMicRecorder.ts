@@ -34,7 +34,7 @@ export function useMicRecorder() {
 
   const meterLevel = useCallback(() => {
     const analyser = analyserRef.current;
-    if (!analyser || stateRef.current !== "listening") {
+    if (!analyser || (stateRef.current !== "listening" && stateRef.current !== "speaking")) {
       dispatch({ type: "SET_MIC_LEVEL", level: 0 });
       levelRafRef.current = null;
       return;
@@ -61,7 +61,8 @@ export function useMicRecorder() {
       cancelAnimationFrame(levelRafRef.current);
       levelRafRef.current = null;
     }
-  }, []);
+    dispatch({ type: "SET_MIC_LEVEL", level: 0 });
+  }, [dispatch]);
 
   const sendRecording = useCallback(async () => {
     setVoiceState("thinking", "DENKT NACH");
@@ -84,9 +85,34 @@ export function useMicRecorder() {
       if (data.audioUrl && !mutedRef.current) {
         setVoiceState("speaking", "SPRICHT");
         const audio = new Audio(data.audioUrl);
-        audio.onended = () => setVoiceState("idle", "BEREIT");
-        audio.onerror = () => setVoiceState("idle", "BEREIT");
-        await audio.play().catch(() => setVoiceState("idle", "BEREIT"));
+        const finish = () => {
+          stopTracks();
+          setVoiceState("idle", "BEREIT");
+        };
+        audio.onended = finish;
+        audio.onerror = finish;
+
+        // Analyser auf die Wiedergabe legen, statt nur beim Zuhoeren zu
+        // messen - der Ring soll sichtbar auf die tatsaechliche Antwort-
+        // Lautstaerke reagieren, nicht nur waehrend der Aufnahme.
+        try {
+          const AudioCtx =
+            window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+          const audioCtx = new AudioCtx();
+          const source = audioCtx.createMediaElementSource(audio);
+          const analyser = audioCtx.createAnalyser();
+          analyser.fftSize = 512;
+          source.connect(analyser);
+          analyser.connect(audioCtx.destination);
+          audioCtxRef.current = audioCtx;
+          analyserRef.current = analyser;
+          levelRafRef.current = requestAnimationFrame(meterLevel);
+        } catch {
+          // Web-Audio-Analyse ist ein Zusatz - schlaegt sie fehl, spielt
+          // die Antwort trotzdem ganz normal ab, nur ohne Ring-Reaktion.
+        }
+
+        await audio.play().catch(finish);
       } else {
         setVoiceState("idle", "BEREIT");
       }
@@ -95,7 +121,7 @@ export function useMicRecorder() {
       dispatch({ type: "SET_VOICE_STATE", state: "error", label: message });
       setTimeout(() => setVoiceState("idle", "BEREIT"), 3000);
     }
-  }, [dispatch, setVoiceState]);
+  }, [dispatch, meterLevel, setVoiceState, stopTracks]);
 
   const start = useCallback(async () => {
     if (stateRef.current !== "idle") return;

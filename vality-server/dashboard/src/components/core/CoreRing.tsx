@@ -105,7 +105,9 @@ export default function CoreRing({ expanded }: CoreRingProps) {
   const label = STATE_LABEL[voiceState] ?? STATE_LABEL.idle;
   const action = ACTION_LABEL[voiceState] ?? ACTION_LABEL.idle;
   const innerScale = 1 + micLevel * 0.22;
-  const barBoost = voiceState === "listening" ? micLevel : voiceState === "speaking" ? 0.35 : 0;
+  // micLevel spiegelt live den tatsaechlichen Pegel wider - beim Zuhoeren
+  // das Mikrofon, beim Antworten die Wiedergabe (siehe useMicRecorder).
+  const barBoost = voiceState === "listening" || voiceState === "speaking" ? micLevel : 0;
 
   return (
     <motion.div
@@ -113,6 +115,7 @@ export default function CoreRing({ expanded }: CoreRingProps) {
       data-state={voiceState}
       data-expanded={expanded}
       layout
+      layoutId="core-ring"
       transition={{ type: "spring", stiffness: 170, damping: 22 }}
       style={{ width: expanded ? "min(58vw, 260px)" : "104px", height: expanded ? "min(58vw, 260px)" : "104px" }}
     >
