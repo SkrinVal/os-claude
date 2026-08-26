@@ -6,7 +6,6 @@ import path from "node:path";
 import { config } from "../config";
 import { features } from "../config/features";
 import { transcribeAudio } from "../stt/whisper";
-import { askClaude } from "../brain/claude";
 import { synthesizeSpeech } from "../tts/piper";
 import { addInteraction } from "../util/history";
 import { broadcast } from "../ws/hub";
@@ -17,6 +16,7 @@ import { handleMessageCommand } from "../messages/commands";
 import { handleCallCommand } from "../calls/commands";
 import { handleConfirmCommand } from "../shared/confirmCommands";
 import { handleHudCommand } from "../hud/commands";
+import { classifyAndRespond } from "../hud/nlIntent";
 
 export const voiceRouter = Router();
 
@@ -63,12 +63,14 @@ voiceRouter.post("/voice", upload.single("audio"), async (req, res) => {
       reply = hudResult.reply;
     } else if (memoryResult) {
       reply = memoryResult.reply;
-    } else if (features.memory) {
-      const contextBlock = await buildPromptContext();
-      const prompt = contextBlock ? `${contextBlock}Aktuelle Anfrage: ${transcript}` : transcript;
-      reply = await askClaude(prompt);
     } else {
-      reply = await askClaude(transcript);
+      // Kein starres Regex-Muster hat gegriffen (siehe hud/commands.ts) -
+      // hier uebernimmt ein einzelner Claude-Aufruf sowohl die
+      // Absichtserkennung (Stadt/Recherche/Globus/Uebersicht per freier
+      // Formulierung) als auch, falls keine Navigation gemeint ist, gleich
+      // die normale Antwort (siehe hud/nlIntent.ts).
+      const contextBlock = features.memory ? await buildPromptContext() : "";
+      reply = await classifyAndRespond(transcript, contextBlock);
     }
 
     if (features.memory) {
