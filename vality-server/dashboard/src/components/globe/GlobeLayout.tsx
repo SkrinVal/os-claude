@@ -6,6 +6,7 @@ import { focusCity } from "../../services/weather";
 import { geocodeAndFocusCity } from "../../services/geocoding";
 import CoreRing from "../core/CoreRing";
 import HudFrame from "../layout/HudFrame";
+import Skeleton from "../layout/Skeleton";
 import type { CityMarker } from "../../state/types";
 import "./GlobeLayout.css";
 
@@ -164,7 +165,14 @@ export default function GlobeLayout() {
 
         <HudFrame title="Wetter" className="globe-layout__weather" delay={0.1}>
           {!globe.focusCity && <p className="globe-layout__hint mono">Stadt auswählen.</p>}
-          {globe.focusCity && globe.loading && <p className="globe-layout__hint mono">LÄDT…</p>}
+          {globe.focusCity && globe.loading && (
+            <div className="globe-layout__weather-skeleton">
+              <Skeleton height={14} width="55%" />
+              <Skeleton height={30} width="40%" />
+              <Skeleton height={12} width="65%" />
+              <Skeleton height={10} width="45%" />
+            </div>
+          )}
           {globe.focusCity && !globe.loading && globe.error && (
             <p className="globe-layout__hint globe-layout__hint--error mono">{globe.error}</p>
           )}

@@ -3,8 +3,27 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useHudDispatch, useHudState } from "../../state/store";
 import { runResearch } from "../../services/wikipedia";
 import CoreRing from "../core/CoreRing";
+import HudFrame from "../layout/HudFrame";
+import Skeleton from "../layout/Skeleton";
 import SteckbriefCard from "./SteckbriefCard";
 import "./ResearchLayout.css";
+
+function SteckbriefSkeleton() {
+  return (
+    <HudFrame className="steckbrief-card">
+      <div className="steckbrief-card__head">
+        <Skeleton width={72} height={72} circle />
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 8 }}>
+          <Skeleton height={16} width="60%" />
+          <Skeleton height={11} width="85%" />
+        </div>
+      </div>
+      <Skeleton height={12} width="100%" />
+      <Skeleton height={12} width="92%" />
+      <Skeleton height={12} width="70%" />
+    </HudFrame>
+  );
+}
 
 export default function ResearchLayout() {
   const { research } = useHudState();
@@ -48,9 +67,9 @@ export default function ResearchLayout() {
 
         <AnimatePresence mode="wait">
           {research.loading && (
-            <motion.p key="loading" className="research-layout__status mono" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-              DURCHSUCHE WIKIPEDIA…
-            </motion.p>
+            <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <SteckbriefSkeleton />
+            </motion.div>
           )}
           {!research.loading && research.error && (
             <motion.p

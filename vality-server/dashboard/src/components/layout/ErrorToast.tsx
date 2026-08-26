@@ -20,6 +20,7 @@ export default function ErrorToast() {
           exit={{ opacity: 0, y: 16 }}
           transition={{ duration: 0.25, ease: [0.22, 0.9, 0.32, 1] }}
         >
+          <span className="error-toast__glyph" aria-hidden="true" />
           {voiceLabel}
         </motion.div>
       )}

@@ -4,15 +4,48 @@
   bottom: max(24px, env(safe-area-inset-bottom));
   transform: translateX(-50%);
   max-width: min(90vw, 520px);
+  display: flex;
+  align-items: center;
+  gap: 10px;
   background: rgba(var(--danger-rgb), 0.12);
+  backdrop-filter: blur(10px);
   border: 1px solid rgba(var(--danger-rgb), 0.4);
   color: var(--danger);
   font-size: 12px;
   line-height: 1.5;
   padding: 12px 18px;
   border-radius: 8px;
-  text-align: center;
+  text-align: left;
   z-index: 60;
   word-break: break-word;
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+  box-shadow:
+    0 12px 30px rgba(0, 0, 0, 0.4),
+    0 0 24px -6px rgba(var(--danger-rgb), 0.5);
+}
+
+.error-toast__glyph {
+  flex-shrink: 0;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--danger);
+  box-shadow: 0 0 8px rgba(var(--danger-rgb), 0.9);
+  animation: error-glyph-pulse 1s ease-in-out infinite;
+}
+@keyframes error-glyph-pulse {
+  0%,
+  100% {
+    opacity: 0.6;
+    transform: scale(0.85);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .error-toast__glyph {
+    animation: none;
+  }
 }

@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useHudDispatch } from "../../state/store";
 import { useNews } from "../../hooks/useNews";
 import HudFrame from "../layout/HudFrame";
+import Skeleton from "../layout/Skeleton";
 import "./NewsPanel.css";
 
 function formatTime(pubDate: string | null): string {
@@ -32,7 +33,16 @@ export default function NewsPanel({ delay }: { delay?: number }) {
       </div>
 
       <div className="news-panel__list">
-        {loading && items.length === 0 && <p className="news-panel__hint mono">LÄDT…</p>}
+        {loading && items.length === 0 && (
+          <div className="news-panel__skeletons">
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} className="news-panel__skeleton-item">
+                <Skeleton height={13} width={`${86 - i * 6}%`} />
+                <Skeleton height={9} width="40%" />
+              </div>
+            ))}
+          </div>
+        )}
         {!loading && error && <p className="news-panel__hint news-panel__hint--error mono">{error}</p>}
         {!loading && !error && items.length === 0 && (
           <p className="news-panel__hint mono">Keine Meldungen verfügbar.</p>
