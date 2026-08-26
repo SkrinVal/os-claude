@@ -1,0 +1,18 @@
+.error-toast {
+  position: fixed;
+  left: 50%;
+  bottom: max(24px, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  max-width: min(90vw, 520px);
+  background: rgba(var(--danger-rgb), 0.12);
+  border: 1px solid rgba(var(--danger-rgb), 0.4);
+  color: var(--danger);
+  font-size: 12px;
+  line-height: 1.5;
+  padding: 12px 18px;
+  border-radius: 8px;
+  text-align: center;
+  z-index: 60;
+  word-break: break-word;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+}

@@ -1,0 +1,44 @@
+.log-panel {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.log-panel .hud-frame__body {
+  min-height: 0;
+  flex: 1;
+}
+
+.log-panel__list {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+  overflow-y: auto;
+  max-height: 100%;
+}
+
+.log-panel__empty {
+  color: var(--text-faint);
+  font-size: 13px;
+}
+
+.log-panel__entry {
+  border-left: 2px solid var(--accent-dim);
+  padding-left: 11px;
+}
+
+.log-panel__ts {
+  color: var(--text-faint);
+  font-size: 10.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.log-panel__you {
+  color: var(--accent);
+  font-size: 13.5px;
+  margin: 3px 0 2px;
+}
+
+.log-panel__reply {
+  color: var(--text);
+  font-size: 13.5px;
+}

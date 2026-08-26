@@ -1,0 +1,46 @@
+.idle-layout {
+  display: grid;
+  grid-template-columns: 1fr 1.3fr 1.3fr;
+  gap: 20px;
+  align-items: stretch;
+  height: 100%;
+  padding: 20px;
+  max-width: 1320px;
+  margin: 0 auto;
+}
+
+.idle-layout__aside {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 0;
+}
+.idle-layout__aside--right {
+  min-height: 0;
+}
+.idle-layout__aside--right > * {
+  flex: 1;
+  min-height: 0;
+}
+
+.idle-layout__core {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (max-width: 980px) {
+  .idle-layout {
+    grid-template-columns: 1fr;
+    grid-auto-rows: auto;
+    overflow-y: auto;
+    padding-bottom: 40px;
+  }
+  .idle-layout__core {
+    order: -1;
+    padding: 20px 0 6px;
+  }
+  .idle-layout__aside--right > * {
+    min-height: 220px;
+  }
+}

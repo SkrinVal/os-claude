@@ -1,0 +1,89 @@
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  padding-top: max(14px, env(safe-area-inset-top));
+  border-bottom: 1px solid var(--line);
+  position: relative;
+  z-index: 5;
+}
+
+.topbar__brand {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  font-size: 13px;
+  color: var(--accent);
+}
+
+.topbar__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
+  flex-shrink: 0;
+  animation: topbar-breathe 2.6s ease-in-out infinite;
+}
+
+@keyframes topbar-breathe {
+  0%,
+  100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.topbar__right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.topbar__conn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  color: var(--danger);
+  border: 1px solid rgba(var(--danger-rgb), 0.35);
+  background: rgba(var(--danger-rgb), 0.08);
+  padding: 5px 10px;
+  border-radius: 999px;
+}
+.topbar__conn--up {
+  color: var(--ok);
+  border-color: rgba(var(--ok-rgb), 0.35);
+  background: rgba(var(--ok-rgb), 0.08);
+}
+.topbar__conn-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 6px currentColor;
+}
+
+.topbar__debug {
+  background: transparent;
+  border: 1px solid var(--line-bright);
+  color: var(--text-dim);
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition:
+    color 0.2s,
+    border-color 0.2s;
+}
+.topbar__debug:hover {
+  color: var(--accent);
+  border-color: var(--accent-dim);
+}

@@ -1,0 +1,34 @@
+.quick-actions__btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: var(--bg-inset);
+  border: 1px solid var(--line-bright);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  padding: 10px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition:
+    border-color 0.2s,
+    background 0.2s;
+}
+.quick-actions__btn:hover {
+  border-color: var(--accent-dim);
+  background: var(--accent-soft);
+}
+.quick-actions__btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.quick-actions__state {
+  font-size: 11px;
+  color: var(--ok);
+  letter-spacing: 0.05em;
+}
+.quick-actions__state--off {
+  color: var(--text-faint);
+}

@@ -3,8 +3,9 @@
 PC-"Brain" fuer das Vality AI Sprachassistenz-System. Nimmt Sprache per
 Push-to-Talk entgegen, transkribiert lokal mit whisper.cpp, schickt den Text
 an die Claude Code CLI (`claude -p`) und liest die Antwort per Piper (lokal,
-offline) vor. Ein Web-Dashboard im Sci-Fi-HUD-Stil zeigt Mikrofon-Status,
-Logbuch und System-Stats.
+offline) vor. Ein kontextabhaengiges Sci-Fi-HUD-Dashboard (React, siehe
+`dashboard/`) zeigt Mikrofon-Status, Logbuch und System-Stats - Details
+und Farbpalette in `dashboard/README.md`.
 
 Kein eigenes LLM-API-Billing: Es wird ausschliesslich das bestehende
 Claude-Abo ueber die lokal installierte `claude` CLI genutzt.
@@ -36,6 +37,18 @@ cp .env.example .env
 `piper.exe` und dem Piper-Stimm-Modell auf die eigenen Speicherorte
 anpassen (siehe Kommentare in `.env.example`).
 
+**Dashboard einmalig bauen** (siehe auch `dashboard/README.md`):
+
+```bash
+cd dashboard
+npm install
+npm run build
+cd ..
+```
+
+Baut nach `public/` - das ist jetzt reine Build-Ausgabe, keine Handarbeit
+mehr. Ohne diesen Schritt liefert der Server unter `/` nichts aus.
+
 ## Starten (Entwicklung)
 
 ```bash
@@ -49,10 +62,9 @@ zugreifen kann.
 ## Testen
 
 1. Browser oeffnen: `http://localhost:4390`
-2. Mikrofon-Berechtigung erlauben.
-3. Push-to-Talk-Kreis in der Mitte gedrueckt halten (Maus/Touch) oder
-   Leertaste gedrueckt halten, sprechen, wieder loslassen.
-4. Ablauf: Aufnahme → Upload an `/api/voice` → whisper.cpp transkribiert →
+2. Auf den Core-Ring in der Mitte tippen (Maus/Touch) oder Leertaste
+   druecken, sprechen, nochmal tippen/Leertaste zum Beenden.
+3. Ablauf: Aufnahme → Upload an `/api/voice` → whisper.cpp transkribiert →
    Text geht an `claude -p` → Antwort wird mit Piper vertont → Dashboard
    zeigt den Eintrag im Logbuch und spielt die Antwort automatisch ab.
 
@@ -305,6 +317,7 @@ Voller Test mit echtem Handy: siehe `vality-app/README.md`.
 
 ```bash
 npm run build
+(cd dashboard && npm run build)
 npm start
 ```
 
@@ -343,7 +356,8 @@ vality-server/
     ws/hub.ts         WebSocket-Broadcast fuer das Dashboard
     util/history.ts   In-Memory-Verlauf der letzten Interaktionen (Dashboard-Anzeige)
     index.ts          Server-Einstiegspunkt
-  public/         Web-Dashboard (HTML/CSS/JS, Sci-Fi-HUD)
+  dashboard/      Web-Dashboard, React-Quelle (siehe dashboard/README.md)
+  public/         Build-Ausgabe von dashboard/ (nicht im Git, wird gebaut)
   data/tmp/       temporaere Audio-Uploads (wird geleert)
   data/audio-out/ erzeugte TTS-Antworten (wav)
   data/memory/    facts.json, conversations.json (nicht im Git, siehe .gitignore)
