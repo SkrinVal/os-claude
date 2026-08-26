@@ -142,6 +142,39 @@ transkribierte Nebensatz nach „dass"/„merk dir" — bei ungewoehnlichen
 Formulierungen kann das grammatikalisch holprig aussehen, inhaltlich bleibt
 es aber das, was gesagt wurde.
 
+## Feature 2: Anwesenheitserkennung
+
+Server-Seite ist fertig, braucht die Handy-App (`vality-app/`, siehe deren
+README) fuer echtes Geofencing. `POST /api/presence` mit Body
+`{ "event": "arrived" | "left" }` und Header `Authorization: Bearer
+<PRESENCE_TOKEN>` loest die Reaktion aus:
+
+1. Antwortet dem Aufrufer sofort mit `202 { ok: true }` — die eigentliche
+   Sprachgenerierung blockiert die Handy-App nicht.
+2. Baut (falls `memory` aktiv ist) den bekannten Fakten-Kontext ein und
+   fragt `claude -p` nach einer kurzen Begruessung/Verabschiedung.
+3. Vertont die Antwort mit Piper, loggt sie ins Gedaechtnis (Kurzzeit-
+   Verlauf) und broadcastet sie ans Dashboard, das sie automatisch abspielt.
+
+`PRESENCE_TOKEN` in `.env` setzen (leer = kein Schutz, nur zum Testen -
+sonst kann jedes Geraet im selben WLAN Events schicken), `presence: true`
+in `config/features.json`.
+
+### Testen
+
+Ohne Handy, direkt per curl:
+
+```bash
+curl -X POST http://localhost:4390/api/presence \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <dein PRESENCE_TOKEN>" \
+  -d '{"event":"arrived"}'
+```
+
+Dashboard sollte einen neuen Eintrag `[Ankunft zuhause]` zeigen und die
+Antwort automatisch vorlesen (Browser einmal angeklickt haben, sonst
+blockiert Autoplay). Mit dem Handy: siehe `vality-app/README.md`.
+
 ## Produktions-Build
 
 ```bash
@@ -166,7 +199,9 @@ vality-server/
       commands.ts     "Merk dir"/"Was weißt du über"/"Vergiss"
       context.ts      Kontext-Block fuer claude -p
       cleanup.ts       Stale-Sweep
-    routes/           Express-Routen (/api/voice, /api/status, /api/history)
+    presence/         Feature 2: Anwesenheitserkennung
+      reactions.ts    Begruessung/Verabschiedung generieren + vorlesen
+    routes/           Express-Routen (/api/voice, /api/status, /api/history, /api/presence)
     ws/hub.ts         WebSocket-Broadcast fuer das Dashboard
     util/history.ts   In-Memory-Verlauf der letzten Interaktionen (Dashboard-Anzeige)
     index.ts          Server-Einstiegspunkt
@@ -178,10 +213,9 @@ vality-server/
 
 ## Geplante Ausbaustufen
 
-- Feature 2: Anwesenheitserkennung (Standort-basiert) — braucht die
-  Handy-App, noch nicht gebaut
-- Feature 3: Nachrichten vorlesen & diktieren (SMS/WhatsApp) — braucht die
-  Handy-App und je nach Umfang ein Custom-Dev-Client statt Expo Go
+- Feature 3: Nachrichten vorlesen & diktieren (SMS/WhatsApp) — braucht
+  einen nativen Android-Modul-Baustein (NotificationListenerService) im
+  Custom-Dev-Client von `vality-app/`
 - Feature 4: Anrufe & Kurznachrichten per Sprachbefehl — wie Feature 3
 - Code-/Datei-Steuerung ueber die Claude Code CLI selbst
 - System-Steuerung (Apps oeffnen, Lautstaerke)

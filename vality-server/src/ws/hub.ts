@@ -2,7 +2,7 @@ import type { WebSocket, WebSocketServer } from "ws";
 
 export type ValityEvent =
   | { type: "mic_status"; listening: boolean }
-  | { type: "interaction"; id: string; transcript: string; reply: string; ts: string }
+  | { type: "interaction"; id: string; transcript: string; reply: string; audioUrl: string | null; ts: string }
   | { type: "error"; message: string; ts: string };
 
 let wss: WebSocketServer | null = null;

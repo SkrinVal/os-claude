@@ -44,6 +44,14 @@ export const config = {
     staleAfterMonths: Number(process.env.MEMORY_STALE_AFTER_MONTHS ?? 6),
   },
 
+  presence: {
+    // Muss mit dem Token uebereinstimmen, das die Handy-App in den
+    // Einstellungen fuer den Server hinterlegt hat. Ohne Token (leer)
+    // nimmt der Server JEDES Geraet im Netz an - nur fuer schnelles
+    // lokales Testen akzeptabel, sonst unbedingt setzen.
+    token: process.env.PRESENCE_TOKEN ?? "",
+  },
+
   dataDir: path.resolve(__dirname, "..", "..", "data"),
   tmpDir: path.resolve(__dirname, "..", "..", "data", "tmp"),
   audioOutDir: path.resolve(__dirname, "..", "..", "data", "audio-out"),

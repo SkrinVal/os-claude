@@ -128,6 +128,18 @@ function connectWs() {
       setState("error");
       micStatus.textContent = msg.message;
       setTimeout(() => setState("idle"), 3000);
+    } else if (msg.type === "interaction") {
+      // Kommt z.B. von der Anwesenheitserkennung, ohne dass hier im Browser
+      // aufgenommen wurde - trotzdem im Logbuch zeigen und vorlesen.
+      renderEntry(msg);
+      if (msg.audioUrl) {
+        replyAudio.src = msg.audioUrl;
+        // Browser blockieren Autoplay ohne vorherige Nutzerinteraktion auf
+        // dieser Seite; einmal auf die Seite klicken/tippen behebt das.
+        replyAudio.play().catch(() => {
+          console.warn("Autoplay blockiert - einmal auf die Seite klicken, dann geht es.");
+        });
+      }
     }
   };
 }

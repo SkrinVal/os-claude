@@ -55,7 +55,7 @@ voiceRouter.post("/voice", upload.single("audio"), async (req, res) => {
     const ts = new Date().toISOString();
 
     addInteraction({ id, transcript, reply, audioUrl, ts });
-    broadcast({ type: "interaction", id, transcript, reply, ts });
+    broadcast({ type: "interaction", id, transcript, reply, audioUrl, ts });
 
     res.json({ id, transcript, reply, audioUrl, ts });
   } catch (err) {

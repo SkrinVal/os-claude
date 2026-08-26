@@ -8,6 +8,7 @@ import { config } from "./config";
 import { features } from "./config/features";
 import { voiceRouter } from "./routes/voice";
 import { statusRouter } from "./routes/status";
+import { presenceRouter } from "./routes/presence";
 import { attachWebSocketServer } from "./ws/hub";
 import { loadMemory } from "./memory/store";
 import { sweepStaleFacts } from "./memory/cleanup";
@@ -39,6 +40,10 @@ async function main(): Promise<void> {
 
   app.use("/api", statusRouter);
   app.use("/api", voiceRouter);
+  app.use("/api", presenceRouter);
+  if (features.presence) {
+    console.log("Anwesenheitserkennung: aktiv, wartet auf POST /api/presence von der Handy-App.");
+  }
   app.use("/audio", express.static(config.audioOutDir));
   app.use("/", express.static(path.join(__dirname, "..", "public")));
 
