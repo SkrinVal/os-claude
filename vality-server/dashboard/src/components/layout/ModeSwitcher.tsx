@@ -1,3 +1,4 @@
+import { motion } from "framer-motion";
 import { useHudDispatch, useHudState } from "../../state/store";
 import type { HudMode } from "../../state/types";
 import "./ModeSwitcher.css";
@@ -25,7 +26,18 @@ export default function ModeSwitcher() {
           onClick={() => dispatch({ type: "SET_MODE", mode: m.id })}
           aria-current={mode === m.id ? "page" : undefined}
         >
-          {m.label}
+          {/* Ein einzelnes layoutId-Element wandert zwischen den Buttons hin
+              und her, statt dass die Hervorhebung pro Button hart ein-/
+              ausgeblendet wird - macht den Moduswechsel im HUD sichtbar
+              statt nur den Text-/Farbwechsel. */}
+          {mode === m.id && (
+            <motion.span
+              layoutId="mode-switcher-pill"
+              className="mode-switcher__pill"
+              transition={{ type: "spring", stiffness: 500, damping: 38 }}
+            />
+          )}
+          <span className="mode-switcher__label">{m.label}</span>
         </button>
       ))}
     </nav>

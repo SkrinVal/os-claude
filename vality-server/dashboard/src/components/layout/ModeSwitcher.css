@@ -8,6 +8,7 @@
 }
 
 .mode-switcher__btn {
+  position: relative;
   background: transparent;
   border: none;
   color: var(--text-dim);
@@ -16,10 +17,7 @@
   padding: 6px 14px;
   border-radius: 999px;
   cursor: pointer;
-  transition:
-    color 0.2s,
-    background 0.2s,
-    box-shadow 0.2s;
+  transition: color 0.2s;
 }
 .mode-switcher__btn:hover {
   color: var(--text);
@@ -30,8 +28,24 @@
 }
 .mode-switcher__btn--active {
   color: var(--accent);
+}
+.mode-switcher__label {
+  position: relative;
+  z-index: 1;
+}
+.mode-switcher__pill {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: 999px;
   background: var(--accent-soft);
   box-shadow: 0 0 12px -3px rgba(var(--accent-rgb), 0.6);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mode-switcher__pill {
+    transition: none;
+  }
 }
 
 @media (max-width: 720px) {
