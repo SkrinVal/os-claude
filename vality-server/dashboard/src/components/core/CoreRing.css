@@ -5,6 +5,23 @@
      nie Klicks auf benachbarte UI abfangen (bleiben ueber inset/blur
      absichtlich groesser als der Ring). */
   pointer-events: none;
+  /* Bereitet den Browser auf die Groessen-/Positions-Animation beim
+     Moduswechsel vor (eigener Compositor-Layer statt erst mitten in der
+     Animation eine Ebene aufzubauen). */
+  will-change: transform;
+}
+
+/* Waehrend der Ring zwischen Mitte und Ecke fliegt (siehe
+   onLayoutAnimationStart/-Complete in CoreRing.tsx): die unabhaengigen
+   Endlosanimationen kurz anhalten, damit der Browser nur das eine
+   Layout-Flip berechnen muss statt zusaetzlich ein halbes Dutzend
+   Loop-Animationen - das war der Ruckler beim Verkleinern in die Ecke. */
+.core-ring[data-flying="true"] .core-ring__membrane,
+.core-ring[data-flying="true"] .core-ring__ribs,
+.core-ring[data-flying="true"] .core-ring__bar,
+.core-ring[data-flying="true"] .core-ring__orbit,
+.core-ring[data-flying="true"] .core-ring__sphere-edge {
+  animation-play-state: paused;
 }
 .core-ring__button {
   pointer-events: auto;

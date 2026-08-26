@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useHudState } from "../../state/store";
 import { useMicRecorder } from "../../hooks/useMicRecorder";
 import "./CoreRing.css";
@@ -94,6 +94,13 @@ interface CoreRingProps {
 export default function CoreRing({ expanded }: CoreRingProps) {
   const { voiceState, micLevel } = useHudState();
   const { toggle } = useMicRecorder();
+  // Waehrend der Ring zwischen Mitte (Idle) und Ecke (Recherche/Globus)
+  // fliegt, pausieren die ganzen unabhaengigen CSS-Endlosanimationen
+  // (Membran-Rotation, Rippen, Balken, Orbit-Punkte) kurz - sonst
+  // rechnet der Browser das Layout-Flip UND ein halbes Dutzend Loop-
+  // Animationen gleichzeitig, was auf schwaecheren Geraeten sichtbar
+  // ruckelt. Nach der Landung laufen alle wieder normal weiter.
+  const [flying, setFlying] = useState(false);
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
@@ -186,9 +193,12 @@ export default function CoreRing({ expanded }: CoreRingProps) {
       className="core-ring"
       data-state={voiceState}
       data-expanded={expanded}
+      data-flying={flying}
       layout
       layoutId="core-ring"
-      transition={{ type: "spring", stiffness: 170, damping: 22 }}
+      transition={{ duration: 0.42, ease: [0.22, 0.9, 0.32, 1] }}
+      onLayoutAnimationStart={() => setFlying(true)}
+      onLayoutAnimationComplete={() => setFlying(false)}
       style={{ width: expanded ? "min(58vw, 260px)" : "104px", height: expanded ? "min(58vw, 260px)" : "104px" }}
     >
       <div className="core-ring__halo core-ring__halo--a" aria-hidden="true" />
@@ -256,14 +266,22 @@ export default function CoreRing({ expanded }: CoreRingProps) {
         <motion.g animate={{ scale: innerScale }} transition={{ type: "spring", stiffness: 300, damping: 18 }} style={{ transformOrigin: "100px 100px" }}>
           <circle cx="100" cy="100" r="50" fill="url(#core-sphere-fill)" />
           <circle cx="100" cy="100" r="50" className="core-ring__sphere-edge" />
-          <g className="core-ring__hexdots">
-            {dots.map((d, i) => (
-              <circle key={i} cx={d.x} cy={d.y} r={0.9} opacity={0.15 + d.depth * 0.55} />
-            ))}
-          </g>
-          {sparkles.map((s) => (
-            <circle key={s.key} cx={s.x} cy={s.y} r="1.6" className="core-ring__sparkle" style={{ ["--spark-delay" as string]: `${s.delay}s` }} />
-          ))}
+          {/* Im verkleinerten Eck-Zustand (104px) sind einzelne Punkte/
+              Funken ohnehin nicht mehr zu unterscheiden - dort komplett
+              weglassen spart ~150 SVG-Elemente Zeichen-/Kompositierlast,
+              gerade waehrend der Flug-Animation spuerbar. */}
+          {expanded && (
+            <>
+              <g className="core-ring__hexdots">
+                {dots.map((d, i) => (
+                  <circle key={i} cx={d.x} cy={d.y} r={0.9} opacity={0.15 + d.depth * 0.55} />
+                ))}
+              </g>
+              {sparkles.map((s) => (
+                <circle key={s.key} cx={s.x} cy={s.y} r="1.6" className="core-ring__sparkle" style={{ ["--spark-delay" as string]: `${s.delay}s` }} />
+              ))}
+            </>
+          )}
         </motion.g>
       </svg>
 
