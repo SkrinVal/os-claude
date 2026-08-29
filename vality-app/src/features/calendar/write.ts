@@ -1,4 +1,5 @@
 import * as Calendar from "expo-calendar";
+import { loadSettings } from "../../storage/settings";
 
 export interface CreateEventResult {
   ok: boolean;
@@ -21,16 +22,30 @@ export async function requestCalendarPermission(): Promise<boolean> {
   return status === "granted";
 }
 
-// Android kennt (anders als iOS) keinen einzelnen "Standard"-Kalender -
-// stattdessen den ersten beschreibbaren Kalender nehmen, bevorzugt den
-// primaeren Account-Kalender (also z.B. das verknuepfte Google-Konto,
-// unabhaengig davon, welche Kalender-App der Nutzer tatsaechlich installiert
-// hat - die liest denselben Android-Kalenderspeicher). Gibt es gar keinen
-// (kein Konto auf dem Geraet hinterlegt), einen eigenen lokalen Kalender
-// anlegen, damit Termine trotzdem funktionieren.
-async function findWritableCalendar(): Promise<Calendar.ExpoCalendar> {
+// Fuer die Kalender-Auswahl in CalendarSection - nur beschreibbare
+// Kalender, sonst koennte der Nutzer einen waehlen, in dem gar keine
+// Termine angelegt werden koennen.
+export async function getWritableCalendars(): Promise<Calendar.ExpoCalendar[]> {
   const calendars = await Calendar.getCalendars(Calendar.EntityTypes.EVENT);
-  const writable = calendars.filter((c) => c.allowsModifications);
+  return calendars.filter((c) => c.allowsModifications);
+}
+
+// Android kennt (anders als iOS) keinen einzelnen "Standard"-Kalender -
+// deshalb kann der Nutzer selbst einen auswaehlen (CalendarSection,
+// gespeichert als settings.calendarId). Ohne Auswahl oder wenn der
+// gespeicherte Kalender nicht mehr existiert/nicht mehr beschreibbar ist,
+// automatisch den primaeren Account-Kalender nehmen (z.B. das verknuepfte
+// Google-Konto). Gibt es gar keinen beschreibbaren Kalender (kein Konto
+// auf dem Geraet hinterlegt), einen eigenen lokalen Kalender anlegen,
+// damit Termine trotzdem funktionieren.
+async function findWritableCalendar(preferredId: string | null): Promise<Calendar.ExpoCalendar> {
+  const writable = await getWritableCalendars();
+
+  if (preferredId) {
+    const preferred = writable.find((c) => c.id === preferredId);
+    if (preferred) return preferred;
+  }
+
   const primary = writable.find((c) => c.isPrimary) ?? writable[0];
   if (primary) return primary;
 
@@ -60,7 +75,8 @@ export async function createCalendarEvent(
   }
 
   try {
-    const calendar = await findWritableCalendar();
+    const settings = await loadSettings();
+    const calendar = await findWritableCalendar(settings.calendarId);
     await calendar.createEvent({
       title,
       startDate: new Date(startAt),

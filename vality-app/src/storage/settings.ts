@@ -15,6 +15,10 @@ export interface AppSettings {
   home: HomeLocation | null;
   whatsappEnabled: boolean;
   smsEnabled: boolean;
+  // Vom Nutzer gewaehlter Kalender fuer per Sprachbefehl angelegte Termine
+  // (siehe features/calendar/). null = automatisch waehlen (bevorzugt den
+  // primaeren Account-Kalender), sonst die ID des gewaehlten Kalenders.
+  calendarId: string | null;
 }
 
 const STORAGE_KEY = "vality.settings.v1";
@@ -26,6 +30,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   home: null,
   whatsappEnabled: false,
   smsEnabled: false,
+  calendarId: null,
 };
 
 export async function loadSettings(): Promise<AppSettings> {

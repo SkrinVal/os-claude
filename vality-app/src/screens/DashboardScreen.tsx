@@ -4,6 +4,7 @@ import ConnectionSection from "../features/connection/ConnectionSection";
 import PresenceSection from "../features/presence/PresenceSection";
 import MessagingSection from "../features/messaging/MessagingSection";
 import CallsSection from "../features/calls/CallsSection";
+import CalendarSection from "../features/calendar/CalendarSection";
 import StatusPill from "../ui/StatusPill";
 import { colors } from "../ui/theme";
 import { DEFAULT_SETTINGS, loadSettings, type AppSettings } from "../storage/settings";
@@ -75,6 +76,7 @@ export default function DashboardScreen() {
         <PresenceSection settings={settings} onSettingsChange={setSettings} />
         <MessagingSection settings={settings} onSettingsChange={setSettings} />
         <CallsSection />
+        <CalendarSection settings={settings} onSettingsChange={setSettings} />
       </ScrollView>
     </SafeAreaView>
   );
