@@ -7,7 +7,15 @@ import { config } from "../config";
  * Nutzt das bestehende Claude-Abo des Nutzers statt einer separaten API mit eigenem Billing.
  */
 export async function askClaude(prompt: string): Promise<string> {
-  const args = ["-p", prompt, ...config.claude.extraArgs];
+  // Prompt bewusst NICHT als CLI-Argument uebergeben, sondern per stdin
+  // (wie tts/piper.ts es fuer seinen Text auch schon macht): der
+  // Klassifizierer-Prompt (siehe hud/nlIntent.ts) ist mehrzeilig, und auf
+  // Windows muss "claude" ueber cmd.exe gestartet werden (s.u.) - cmd.exe
+  // kann grundsaetzlich keine eingebetteten Zeilenumbrueche in einem
+  // Kommandozeilen-Argument verarbeiten, egal wie sauber escaped wird (das
+  // bricht das Kommando einfach am ersten \n ab). Ueber stdin umgeht das
+  // Problem komplett, unabhaengig von Shell/Plattform.
+  const args = ["-p", ...config.claude.extraArgs];
 
   return new Promise<string>((resolve, reject) => {
     // Auf Windows ist eine global per npm installierte CLI wie "claude" ein
@@ -29,6 +37,9 @@ export async function askClaude(prompt: string): Promise<string> {
       shell: process.platform === "win32",
       cwd: os.tmpdir(),
     });
+
+    proc.stdin.write(prompt);
+    proc.stdin.end();
 
     let stdout = "";
     let stderr = "";
