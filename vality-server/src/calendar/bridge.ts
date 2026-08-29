@@ -95,3 +95,21 @@ export function deliverCalendarEventsList(requestId: string, events: CalendarEve
   pending.resolve(events);
   return true;
 }
+
+// Fuers Oeffnungs-Briefing (hud/openingBriefing.ts): nur die Termine des
+// heutigen Kalendertags, chronologisch. Liefert bewusst ein leeres Array
+// sowohl bei "keine Termine heute" als auch bei "Handy-App nicht
+// erreichbar" - der Aufrufer darf daraus NICHT "heute nichts los" sprechen,
+// nur den Kalender-Satz weglassen (siehe listCalendarEventsViaPhone-Timeout).
+export async function getTodaysCalendarEvents(): Promise<CalendarEventSummary[]> {
+  const events = await listCalendarEventsViaPhone();
+  const now = new Date();
+  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const endOfDay = startOfDay + 24 * 60 * 60 * 1000;
+  return events
+    .filter((e) => {
+      const t = new Date(e.startAt).getTime();
+      return t >= startOfDay && t < endOfDay;
+    })
+    .sort((a, b) => a.startAt.localeCompare(b.startAt));
+}

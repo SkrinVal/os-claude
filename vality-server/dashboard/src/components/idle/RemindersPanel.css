@@ -52,10 +52,30 @@
   min-width: 0;
 }
 
+.reminders-panel__title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
 .reminders-panel__text {
   font-size: 12.5px;
   line-height: 1.4;
   color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reminders-panel__today {
+  flex-shrink: 0;
+  font-size: 8.5px;
+  letter-spacing: 0.08em;
+  color: var(--bg);
+  background: var(--accent);
+  border-radius: 3px;
+  padding: 1.5px 5px;
 }
 
 .reminders-panel__when {
