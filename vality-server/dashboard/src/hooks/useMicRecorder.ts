@@ -1,5 +1,6 @@
 import { useCallback, useRef } from "react";
 import { useHudDispatch, useHudState } from "../state/store";
+import { concatFloat32, encodeWavPCM16, resampleTo16kHz } from "../utils/wavEncoder";
 
 interface VoiceResponse {
   id: string;
@@ -17,12 +18,15 @@ export function useMicRecorder() {
   const mutedRef = useRef(audioMuted);
   mutedRef.current = audioMuted;
   const stateRef = useRef<"idle" | "listening" | "thinking" | "speaking" | "error">("idle");
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const chunksRef = useRef<BlobPart[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const levelRafRef = useRef<number | null>(null);
+  // Rohe PCM-Aufnahme statt MediaRecorder/webm - whisper.cpp kann nur
+  // echtes WAV lesen, siehe wavEncoder.ts.
+  const processorRef = useRef<ScriptProcessorNode | null>(null);
+  const pcmChunksRef = useRef<Float32Array[]>([]);
+  const captureSampleRateRef = useRef(16000);
 
   const setVoiceState = useCallback(
     (state: typeof stateRef.current, label: string) => {
@@ -54,6 +58,8 @@ export function useMicRecorder() {
   const stopTracks = useCallback(() => {
     streamRef.current?.getTracks().forEach((t) => t.stop());
     streamRef.current = null;
+    processorRef.current?.disconnect();
+    processorRef.current = null;
     audioCtxRef.current?.close().catch(() => {});
     audioCtxRef.current = null;
     analyserRef.current = null;
@@ -66,9 +72,11 @@ export function useMicRecorder() {
 
   const sendRecording = useCallback(async () => {
     setVoiceState("thinking", "DENKT NACH");
-    const blob = new Blob(chunksRef.current, { type: "audio/webm" });
+    const raw = concatFloat32(pcmChunksRef.current);
+    const resampled = resampleTo16kHz(raw, captureSampleRateRef.current);
+    const blob = encodeWavPCM16(resampled, 16000);
     const form = new FormData();
-    form.append("audio", blob, "input.webm");
+    form.append("audio", blob, "input.wav");
 
     try {
       const res = await fetch("/api/voice", { method: "POST", body: form });
@@ -138,15 +146,22 @@ export function useMicRecorder() {
       audioCtxRef.current = audioCtx;
       analyserRef.current = analyser;
 
-      chunksRef.current = [];
-      const recorder = new MediaRecorder(stream);
-      recorder.ondataavailable = (e) => chunksRef.current.push(e.data);
-      recorder.onstop = () => {
-        stopTracks();
-        sendRecording();
+      // Rohe PCM-Samples mitschneiden statt MediaRecorder/webm - whisper.cpp
+      // kann nur echtes WAV lesen (siehe sendRecording/wavEncoder.ts). Der
+      // ScriptProcessor muss an ein (stummes) Gain-Node bis zur destination
+      // haengen, sonst feuert onaudioprocess in manchen Browsern gar nicht.
+      captureSampleRateRef.current = audioCtx.sampleRate;
+      pcmChunksRef.current = [];
+      const processor = audioCtx.createScriptProcessor(4096, 1, 1);
+      processor.onaudioprocess = (e) => {
+        pcmChunksRef.current.push(new Float32Array(e.inputBuffer.getChannelData(0)));
       };
-      mediaRecorderRef.current = recorder;
-      recorder.start();
+      const silentGain = audioCtx.createGain();
+      silentGain.gain.value = 0;
+      source.connect(processor);
+      processor.connect(silentGain);
+      silentGain.connect(audioCtx.destination);
+      processorRef.current = processor;
 
       setVoiceState("listening", "HÖRT ZU");
       levelRafRef.current = requestAnimationFrame(meterLevel);
@@ -154,12 +169,13 @@ export function useMicRecorder() {
       setVoiceState("error", "KEIN MIKROFON");
       setTimeout(() => setVoiceState("idle", "BEREIT"), 2500);
     }
-  }, [meterLevel, sendRecording, setVoiceState, stopTracks]);
+  }, [meterLevel, setVoiceState]);
 
   const stop = useCallback(() => {
     if (stateRef.current !== "listening") return;
-    mediaRecorderRef.current?.stop();
-  }, []);
+    stopTracks();
+    sendRecording();
+  }, [sendRecording, stopTracks]);
 
   const toggle = useCallback(() => {
     if (stateRef.current === "idle") {
