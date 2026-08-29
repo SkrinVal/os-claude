@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import type * as Calendar from "expo-calendar";
+import FadeIn from "../../ui/FadeIn";
 import Panel from "../../ui/Panel";
 import PrimaryButton from "../../ui/PrimaryButton";
 import { colors } from "../../ui/theme";
@@ -96,7 +97,7 @@ export default function CalendarSection({ settings, onSettingsChange }: Props) {
       {calendars === null ? (
         <PrimaryButton label={busy ? "Lade Kalender…" : "Kalender auswählen"} onPress={openPicker} disabled={busy} />
       ) : (
-        <View style={styles.list}>
+        <FadeIn style={styles.list}>
           <TouchableOpacity style={styles.option} onPress={() => pick(null, null)}>
             <View style={[styles.dot, !settings.calendarId && styles.dotActive]} />
             <Text style={styles.optionText}>Automatisch</Text>
@@ -113,7 +114,7 @@ export default function CalendarSection({ settings, onSettingsChange }: Props) {
           <TouchableOpacity style={styles.cancel} onPress={() => setCalendars(null)}>
             <Text style={styles.cancelText}>Schließen</Text>
           </TouchableOpacity>
-        </View>
+        </FadeIn>
       )}
     </Panel>
   );

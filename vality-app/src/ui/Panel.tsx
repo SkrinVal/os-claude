@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Animated, Easing, StyleSheet, Text, TouchableOpacity, View, type ViewStyle } from "react-native";
+import { Animated, Easing, Pressable, StyleSheet, Text, View, type LayoutChangeEvent, type ViewStyle } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { colors } from "./theme";
 
@@ -11,6 +11,9 @@ const TONE_COLOR: Record<Tone, string> = {
   danger: colors.danger,
   neutral: colors.textFaint,
 };
+
+const TOGGLE_DURATION = 300;
+const TOGGLE_EASING = Easing.out(Easing.cubic);
 
 interface PanelProps {
   title: string;
@@ -29,11 +32,16 @@ interface PanelProps {
 // Einklappbar, weil mit wachsender Feature-Zahl (Verbindung, Anwesenheit,
 // Nachrichten, Anrufe, Kalender, Weckwort) eine lange Liste offener Karten
 // schnell unuebersichtlich wird - der Status-Chip im Kopf bleibt aber auch
-// eingeklappt sichtbar, damit nichts vom Zustand verloren geht.
+// eingeklappt sichtbar, damit nichts vom Zustand verloren geht. Auf- und
+// Zuklappen animiert echte Hoehe + Deckkraft (statt hartem Sprung), damit
+// es sich wie eine fluessige Bewegung anfuehlt statt eines Pop-ins.
 export default function Panel({ title, children, style, status, collapsible, defaultExpanded = true }: PanelProps) {
   const [expanded, setExpanded] = useState(defaultExpanded);
+  const [contentHeight, setContentHeight] = useState(0);
   const enter = useRef(new Animated.Value(0)).current;
   const chevron = useRef(new Animated.Value(defaultExpanded ? 1 : 0)).current;
+  const progress = useRef(new Animated.Value(defaultExpanded ? 1 : 0)).current;
+  const headerScale = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     Animated.timing(enter, {
@@ -47,16 +55,26 @@ export default function Panel({ title, children, style, status, collapsible, def
   function toggle() {
     const next = !expanded;
     setExpanded(next);
-    Animated.timing(chevron, {
-      toValue: next ? 1 : 0,
-      duration: 220,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: true,
-    }).start();
+    Animated.timing(chevron, { toValue: next ? 1 : 0, duration: TOGGLE_DURATION, easing: TOGGLE_EASING, useNativeDriver: true }).start();
+    Animated.timing(progress, { toValue: next ? 1 : 0, duration: TOGGLE_DURATION, easing: TOGGLE_EASING, useNativeDriver: false }).start();
+  }
+
+  function onHeaderLayout(event: LayoutChangeEvent) {
+    const h = event.nativeEvent.layout.height;
+    if (h && Math.abs(h - contentHeight) > 0.5) setContentHeight(h);
+  }
+
+  function pressIn() {
+    if (!collapsible) return;
+    Animated.spring(headerScale, { toValue: 0.985, useNativeDriver: true, speed: 40, bounciness: 0 }).start();
+  }
+  function pressOut() {
+    if (!collapsible) return;
+    Animated.spring(headerScale, { toValue: 1, useNativeDriver: true, speed: 30, bounciness: 6 }).start();
   }
 
   const rotate = chevron.interpolate({ inputRange: [0, 1], outputRange: ["-90deg", "0deg"] });
-  const showBody = !collapsible || expanded;
+  const animatedHeight = progress.interpolate({ inputRange: [0, 1], outputRange: [0, contentHeight || 1] });
 
   return (
     <Animated.View
@@ -75,27 +93,38 @@ export default function Panel({ title, children, style, status, collapsible, def
         <View style={[styles.corner, styles.cornerBL]} />
         <View style={[styles.corner, styles.cornerBR]} />
 
-        <TouchableOpacity
-          style={styles.header}
-          onPress={collapsible ? toggle : undefined}
-          activeOpacity={collapsible ? 0.7 : 1}
-          disabled={!collapsible}
-        >
-          <View style={styles.headerLeft}>
-            <Text style={styles.title}>{title}</Text>
-            {status ? (
-              <View style={[styles.statusChip, { borderColor: TONE_COLOR[status.tone] }]}>
-                <View style={[styles.statusDot, { backgroundColor: TONE_COLOR[status.tone] }]} />
-                <Text style={[styles.statusText, { color: TONE_COLOR[status.tone] }]}>{status.label}</Text>
-              </View>
+        <Animated.View style={{ transform: [{ scale: headerScale }] }}>
+          <Pressable
+            style={styles.header}
+            onPress={collapsible ? toggle : undefined}
+            onPressIn={pressIn}
+            onPressOut={pressOut}
+            disabled={!collapsible}
+          >
+            <View style={styles.headerLeft}>
+              <Text style={styles.title}>{title}</Text>
+              {status ? (
+                <View style={[styles.statusChip, { borderColor: TONE_COLOR[status.tone] }]}>
+                  <View style={[styles.statusDot, { backgroundColor: TONE_COLOR[status.tone] }]} />
+                  <Text style={[styles.statusText, { color: TONE_COLOR[status.tone] }]}>{status.label}</Text>
+                </View>
+              ) : null}
+            </View>
+            {collapsible ? (
+              <Animated.Text style={[styles.chevron, { transform: [{ rotate }] }]}>{"▾"}</Animated.Text>
             ) : null}
-          </View>
-          {collapsible ? (
-            <Animated.Text style={[styles.chevron, { transform: [{ rotate }] }]}>{"▾"}</Animated.Text>
-          ) : null}
-        </TouchableOpacity>
+          </Pressable>
+        </Animated.View>
 
-        {showBody ? <View style={styles.body}>{children}</View> : null}
+        {collapsible ? (
+          <Animated.View style={{ height: animatedHeight, opacity: progress, overflow: "hidden" }}>
+            <View onLayout={onHeaderLayout} style={styles.body}>
+              {children}
+            </View>
+          </Animated.View>
+        ) : (
+          <View style={styles.body}>{children}</View>
+        )}
       </LinearGradient>
     </Animated.View>
   );
