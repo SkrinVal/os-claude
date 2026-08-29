@@ -33,8 +33,19 @@ voiceRouter.post("/voice", upload.single("audio"), async (req, res) => {
   const id = randomUUID();
   broadcast({ type: "mic_status", listening: false });
 
+  // Grobe Zeitmessung pro Schritt im Server-Log - ohne die weiss man beim
+  // Optimieren nur raten, welcher Schritt (Whisper/Claude/Piper) tatsaechlich
+  // die Zeit braucht.
+  const stageStart = { t: Date.now() };
+  function logStage(label: string): void {
+    const now = Date.now();
+    console.log(`[voice] ${label}: ${now - stageStart.t}ms`);
+    stageStart.t = now;
+  }
+
   try {
     const transcript = await transcribeAudio(uploaded.path);
+    logStage("whisper (STT)");
     if (!transcript) {
       res.status(422).json({ error: "Whisper hat keinen Text erkannt." });
       return;
@@ -79,12 +90,16 @@ voiceRouter.post("/voice", upload.single("audio"), async (req, res) => {
       const contextBlock = features.memory ? await buildPromptContext() : "";
       reply = await classifyAndRespond(transcript, contextBlock);
     }
+    logStage("Antwort ermitteln (Regex-Befehle/Claude)");
 
-    if (features.memory) {
-      await recordConversationTurn(transcript, reply);
-    }
-
-    const audioPath = await synthesizeSpeech(reply);
+    // Unabhaengig voneinander - das Verlaufs-Schreiben muss nicht auf die
+    // TTS-Synthese warten (und umgekehrt), beides parallel starten statt
+    // nacheinander.
+    const [, audioPath] = await Promise.all([
+      features.memory ? recordConversationTurn(transcript, reply) : Promise.resolve(),
+      synthesizeSpeech(reply),
+    ]);
+    logStage("Piper (TTS) + Verlauf speichern");
     const audioUrl = `/audio/${path.basename(audioPath)}`;
     const ts = new Date().toISOString();
 
