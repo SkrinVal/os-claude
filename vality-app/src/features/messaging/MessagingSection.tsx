@@ -1,8 +1,9 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { Alert, StyleSheet, Switch, Text, TouchableOpacity, View } from "react-native";
+import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import ValityMessaging from "../../../modules/vality-messaging/src/ValityMessagingModule";
 import Panel from "../../ui/Panel";
 import StatusPill from "../../ui/StatusPill";
+import ThemedSwitch from "../../ui/ThemedSwitch";
 import { colors } from "../../ui/theme";
 import { saveSettings, type AppSettings } from "../../storage/settings";
 import { hasSmsPermissions, requestSmsPermissions } from "./permissions";
@@ -90,7 +91,7 @@ export default function MessagingSection({ settings, onSettingsChange }: Props) 
             tone={notificationAccess ? "ok" : "warn"}
           />
         </View>
-        <Switch value={settings.whatsappEnabled} onValueChange={toggleWhatsapp} />
+        <ThemedSwitch value={settings.whatsappEnabled} onValueChange={toggleWhatsapp} />
       </View>
 
       <TouchableOpacity
@@ -108,7 +109,7 @@ export default function MessagingSection({ settings, onSettingsChange }: Props) 
             tone={smsGranted ? "ok" : "warn"}
           />
         </View>
-        <Switch value={settings.smsEnabled} onValueChange={toggleSms} />
+        <ThemedSwitch value={settings.smsEnabled} onValueChange={toggleSms} />
       </View>
 
       <TouchableOpacity style={styles.linkButton} onPress={refreshStatus}>

@@ -1,8 +1,10 @@
 import React, { useState } from "react";
-import { Alert, StyleSheet, Switch, Text, TouchableOpacity, View } from "react-native";
+import { Alert, StyleSheet, Text, View } from "react-native";
 import * as Location from "expo-location";
 import Panel from "../../ui/Panel";
 import Field from "../../ui/Field";
+import PrimaryButton from "../../ui/PrimaryButton";
+import ThemedSwitch from "../../ui/ThemedSwitch";
 import { colors } from "../../ui/theme";
 import { saveSettings, type AppSettings } from "../../storage/settings";
 import { ensureLocationPermissions, startPresenceGeofencing, stopPresenceGeofencing } from "./geofence";
@@ -121,13 +123,11 @@ export default function PresenceSection({ settings, onSettingsChange }: Props) {
 
       <Field label="Radius (Meter)" keyboardType="numeric" value={radiusText} onChangeText={setRadiusText} />
 
-      <TouchableOpacity style={styles.button} onPress={useCurrentLocationAsHome} disabled={busy}>
-        <Text style={styles.buttonText}>Aktuellen Standort als Zuhause übernehmen</Text>
-      </TouchableOpacity>
+      <PrimaryButton label="Aktuellen Standort als Zuhause übernehmen" onPress={useCurrentLocationAsHome} disabled={busy} />
 
       <View style={styles.switchRow}>
         <Text style={styles.label}>Anwesenheitserkennung aktiv</Text>
-        <Switch value={settings.presenceEnabled} onValueChange={togglePresence} disabled={busy} />
+        <ThemedSwitch value={settings.presenceEnabled} onValueChange={togglePresence} disabled={busy} />
       </View>
 
       <Text style={styles.hint}>
@@ -143,13 +143,6 @@ const styles = StyleSheet.create({
   row: { flexDirection: "row", gap: 12 },
   flex1: { flex: 1 },
   label: { color: colors.text, fontSize: 14 },
-  button: {
-    backgroundColor: colors.accentDim,
-    borderRadius: 8,
-    paddingVertical: 12,
-    alignItems: "center",
-  },
-  buttonText: { color: colors.text, fontWeight: "600", fontSize: 13 },
   switchRow: {
     flexDirection: "row",
     justifyContent: "space-between",

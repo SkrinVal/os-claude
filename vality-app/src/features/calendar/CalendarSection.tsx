@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import type * as Calendar from "expo-calendar";
 import Panel from "../../ui/Panel";
+import PrimaryButton from "../../ui/PrimaryButton";
 import { colors } from "../../ui/theme";
 import { saveSettings, type AppSettings } from "../../storage/settings";
 import { getWritableCalendars, hasCalendarPermission, requestCalendarPermission } from "./write";
@@ -93,9 +94,7 @@ export default function CalendarSection({ settings, onSettingsChange }: Props) {
       </View>
 
       {calendars === null ? (
-        <TouchableOpacity style={styles.button} onPress={openPicker} disabled={busy}>
-          <Text style={styles.buttonText}>{busy ? "Lade Kalender…" : "Kalender auswählen"}</Text>
-        </TouchableOpacity>
+        <PrimaryButton label={busy ? "Lade Kalender…" : "Kalender auswählen"} onPress={openPicker} disabled={busy} />
       ) : (
         <View style={styles.list}>
           <TouchableOpacity style={styles.option} onPress={() => pick(null, null)}>
@@ -133,13 +132,6 @@ const styles = StyleSheet.create({
   },
   currentLabel: { color: colors.textFaint, fontSize: 11, letterSpacing: 1, textTransform: "uppercase" },
   currentValue: { color: colors.text, fontSize: 13, fontWeight: "600" },
-  button: {
-    backgroundColor: colors.accentDim,
-    borderRadius: 8,
-    paddingVertical: 12,
-    alignItems: "center",
-  },
-  buttonText: { color: colors.text, fontWeight: "600", fontSize: 13 },
   list: { gap: 2 },
   option: {
     flexDirection: "row",

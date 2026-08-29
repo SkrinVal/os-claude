@@ -1,9 +1,10 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { Alert, Linking, StyleSheet, Switch, Text, TouchableOpacity, View } from "react-native";
+import { Alert, Linking, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import ValityWakeWord from "../../../modules/vality-wakeword/src/ValityWakeWordModule";
 import Field from "../../ui/Field";
 import Panel from "../../ui/Panel";
 import StatusPill from "../../ui/StatusPill";
+import ThemedSwitch from "../../ui/ThemedSwitch";
 import { colors } from "../../ui/theme";
 import { saveSettings, type AppSettings } from "../../storage/settings";
 import { hasMicrophonePermission, requestMicrophonePermission } from "./permissions";
@@ -130,7 +131,7 @@ export default function WakeWordSection({ settings, onSettingsChange }: Props) {
         <View style={styles.rowLabel}>
           <Text style={styles.label}>Weckwort aktiv</Text>
         </View>
-        <Switch value={settings.wakeWordEnabled} onValueChange={toggleWakeWord} />
+        <ThemedSwitch value={settings.wakeWordEnabled} onValueChange={toggleWakeWord} />
       </View>
 
       <TouchableOpacity style={styles.linkButton} onPress={refreshStatus}>

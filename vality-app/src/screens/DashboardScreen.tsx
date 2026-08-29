@@ -10,6 +10,8 @@ import WakeWordSection from "../features/wakeword/WakeWordSection";
 import StatusPill from "../ui/StatusPill";
 import CoreGlyph from "../ui/CoreGlyph";
 import OverviewStrip from "../ui/OverviewStrip";
+import BootScreen from "../ui/BootScreen";
+import HudGrid from "../ui/HudGrid";
 import { colors } from "../ui/theme";
 import { DEFAULT_SETTINGS, loadSettings, type AppSettings } from "../storage/settings";
 
@@ -60,7 +62,7 @@ export default function DashboardScreen() {
   if (!loaded) {
     return (
       <SafeAreaView style={styles.container}>
-        <Text style={styles.loading}>Lade Einstellungen…</Text>
+        <BootScreen />
       </SafeAreaView>
     );
   }
@@ -75,7 +77,9 @@ export default function DashboardScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <HudGrid />
       <View style={styles.glow} pointerEvents="none" />
+      <View style={styles.glowBottom} pointerEvents="none" />
 
       <LinearGradient colors={[colors.surfaceRaised, colors.ground]} style={styles.header}>
         <View style={styles.brandRow}>
@@ -107,7 +111,6 @@ export default function DashboardScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.ground },
-  loading: { color: colors.text, padding: 20 },
   glow: {
     position: "absolute",
     top: -220,
@@ -118,6 +121,16 @@ const styles = StyleSheet.create({
     borderRadius: 260,
     backgroundColor: colors.accentDim,
     opacity: 0.16,
+  },
+  glowBottom: {
+    position: "absolute",
+    bottom: -260,
+    right: -140,
+    width: 420,
+    height: 420,
+    borderRadius: 210,
+    backgroundColor: colors.accentDim,
+    opacity: 0.1,
   },
   groupLabel: {
     color: colors.textFaint,
