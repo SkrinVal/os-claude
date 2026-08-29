@@ -58,6 +58,13 @@ const config: ExpoConfig = {
           "Vality AI nutzt deine Kontakte, um Namen wie \"Ruf Max an\" in Telefonnummern zu übersetzen.",
       },
     ],
+    [
+      "expo-calendar",
+      {
+        calendarPermission:
+          "Vality AI legt Termine, die du per Sprachbefehl nennst (\"Erinnere mich...\"), direkt in deinem Kalender an.",
+      },
+    ],
   ],
 };
 

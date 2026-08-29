@@ -15,7 +15,7 @@ type IncomingEvent =
       reply: string;
       audioUrl: string | null;
       ts: string;
-      kind?: "briefing" | "reminder";
+      kind?: "briefing";
     }
   | { type: "error"; message: string; ts: string }
   | UiModeEvent;

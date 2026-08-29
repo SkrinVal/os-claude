@@ -9,7 +9,7 @@ export type ValityEvent =
       reply: string;
       audioUrl: string | null;
       ts: string;
-      kind?: "briefing" | "reminder";
+      kind?: "briefing";
     }
   | { type: "error"; message: string; ts: string }
   // Schaltet den Dashboard-Modus per Sprachbefehl um (siehe hud/commands.ts).
@@ -23,7 +23,13 @@ export type ValityEvent =
   // das Dashboard ignoriert unbekannte type-Werte einfach.
   | { type: "send_sms"; to: string; body: string }
   | { type: "place_call"; to: string }
-  | { type: "resolve_contact"; requestId: string; name: string };
+  | { type: "resolve_contact"; requestId: string; name: string }
+  // Termine landen NICHT mehr serverseitig gespeichert, sondern direkt im
+  // echten Kalender des Nutzers (Handy-App schreibt ueber expo-calendar) -
+  // dasselbe Anfrage/Antwort-Muster wie resolve_contact: Server broadcastet,
+  // die Handy-App antwortet per REST (siehe routes/calendar.ts).
+  | { type: "create_calendar_event"; requestId: string; title: string; startAt: string; endAt: string; notes?: string }
+  | { type: "list_calendar_events"; requestId: string };
 
 let wss: WebSocketServer | null = null;
 const clients = new Set<WebSocket>();

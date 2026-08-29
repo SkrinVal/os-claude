@@ -1,4 +1,4 @@
-import { deleteReminder, findReminderByText, getUpcomingReminders } from "./store";
+import { listCalendarEventsViaPhone } from "../calendar/bridge";
 import { formatGermanDateTime } from "./format";
 
 export interface ReminderCommandResult {
@@ -10,38 +10,25 @@ const LIST_RE = new RegExp(
   `^${WAKE}(?:bitte\\s+)?(?:was\\s+steht\\s+an|welche\\s+(?:termine|erinnerungen)\\s+habe\\s+ich|meine\\s+(?:termine|erinnerungen))[?.!]*$`,
   "i"
 );
-const CANCEL_RE = new RegExp(`^${WAKE}(?:bitte\\s+)?(?:l[öo]sch(?:e)?|storniere)\\s+die\\s+erinnerung\\s+(?:an\\s+)?(.+?)[.!]*$`, "i");
 
 const MAX_LISTED = 5;
 
-// Listen/Loeschen brauchen kein Sprachverstehen - beides sind einfache
-// Nachschlage-/Loeschoperationen auf bereits vorhandenen Daten, deshalb
-// per Regex und ohne Umweg ueber claude -p (schneller, wie hud/commands.ts
-// und memory/commands.ts). Das ANLEGEN einer neuen Erinnerung braucht
-// dagegen echtes Zeitverstehen ("morgen um neun") und laeuft daher ueber
-// hud/nlIntent.ts.
+// Termine liegen jetzt im echten Kalender auf dem Handy, nicht mehr in
+// einer eigenen Datei hier (siehe calendar/bridge.ts) - "was steht an"
+// fragt live bei der Handy-App nach statt eine lokale Liste zu lesen.
+// Loeschen per Sprache gibt es bewusst nicht mehr: der Termin gehoert jetzt
+// dem echten Kalender, bearbeitet/geloescht wird er direkt dort.
 export async function handleReminderCommand(transcript: string): Promise<ReminderCommandResult | null> {
   const text = transcript.trim();
   if (!text) return null;
 
   if (LIST_RE.test(text)) {
-    const upcoming = getUpcomingReminders();
+    const upcoming = await listCalendarEventsViaPhone();
     if (upcoming.length === 0) {
-      return { reply: "Du hast keine anstehenden Erinnerungen." };
+      return { reply: "Ich finde gerade keine anstehenden Termine - oder die Handy-App ist nicht erreichbar." };
     }
-    const lines = upcoming.slice(0, MAX_LISTED).map((r) => `${formatGermanDateTime(new Date(r.dueAt))}: ${r.text}`);
-    return { reply: `Anstehende Erinnerungen: ${lines.join("; ")}` };
-  }
-
-  const cancelMatch = text.match(CANCEL_RE);
-  if (cancelMatch) {
-    const query = cancelMatch[1].trim();
-    const found = findReminderByText(query);
-    if (!found) {
-      return { reply: `Dazu habe ich keine Erinnerung gefunden, die zu "${query}" passt.` };
-    }
-    await deleteReminder(found.id);
-    return { reply: `Erinnerung gelöscht: ${found.text}` };
+    const lines = upcoming.slice(0, MAX_LISTED).map((e) => `${formatGermanDateTime(new Date(e.startAt))}: ${e.title}`);
+    return { reply: `Anstehende Termine: ${lines.join("; ")}` };
   }
 
   return null;

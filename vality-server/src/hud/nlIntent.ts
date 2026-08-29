@@ -3,7 +3,7 @@ import { broadcast } from "../ws/hub";
 import { buildCityBriefing } from "./cityBriefing";
 import { features } from "../config/features";
 import { addFact, hasSimilarFact, replaceFact } from "../memory/store";
-import { addReminder } from "../reminders/store";
+import { createCalendarEventViaPhone } from "../calendar/bridge";
 import { formatGermanDateTime } from "../reminders/format";
 
 const ALLOWED_ACTIONS = ["globe_city", "globe_open", "research", "idle", "remind", "none"] as const;
@@ -58,7 +58,7 @@ function buildClassifierPrompt(transcript: string, contextBlock: string): string
     '- "globe_open": Die Anfrage will einfach den Globus/die Weltkarte öffnen, ohne einen bestimmten Ort zu nennen.',
     '- "research": Die Anfrage will etwas über eine Person, ein Thema oder einen Begriff nachschlagen/erfahren (nicht über einen Ort). "target" = die Person oder das Thema.',
     '- "idle": Die Anfrage will zurück zur Übersicht/zum Startbildschirm.',
-    '- "remind": Die Anfrage will an etwas zu einem bestimmten Zeitpunkt erinnert werden ("Erinnere mich ...", "Erinnere mich daran, dass ...", "Denk dran, dass ..."). "target" = der Text der Erinnerung, OHNE die Zeitangabe.',
+    '- "remind": Die Anfrage will einen Termin/eine Erinnerung im Kalender anlegen ("Erinnere mich ...", "Erinnere mich daran, dass ...", "Denk dran, dass ...", "Trag ein, dass ..."). "target" = der Titel des Termins, OHNE die Zeitangabe.',
     '- "none": Keine Navigation - eine normale Frage, Unterhaltung, Aussage oder ein anderer Befehl.',
     "",
     "Antworte AUSSCHLIESSLICH mit einem einzigen validen JSON-Objekt, keine Markdown-Codeblöcke, kein Text davor oder danach:",
@@ -166,12 +166,18 @@ export async function classifyAndRespond(transcript: string, contextBlock: strin
       return `Ich suche „${target}".`;
     case "remind": {
       if (!target || !remindAt) return fallback();
-      const dueDate = new Date(remindAt);
-      if (Number.isNaN(dueDate.getTime()) || dueDate.getTime() <= Date.now()) {
-        return "Den Zeitpunkt für die Erinnerung konnte ich nicht sicher verstehen - sag das nochmal etwas genauer.";
+      const startDate = new Date(remindAt);
+      if (Number.isNaN(startDate.getTime()) || startDate.getTime() <= Date.now()) {
+        return "Den Zeitpunkt für den Termin konnte ich nicht sicher verstehen - sag das nochmal etwas genauer.";
       }
-      await addReminder(target, dueDate.toISOString());
-      return `Ich erinnere dich am ${formatGermanDateTime(dueDate)} an: ${target}.`;
+      // Nur ein Zeitpunkt, keine Dauer aus der Sprache bekannt - 30 Minuten
+      // als vernuenftiger Standard fuer einen Kalendereintrag.
+      const endDate = new Date(startDate.getTime() + 30 * 60 * 1000);
+      const result = await createCalendarEventViaPhone(target, startDate, endDate);
+      if (!result.ok) {
+        return `Ich konnte den Termin nicht in deinem Kalender anlegen: ${result.error ?? "unbekannter Fehler"}.`;
+      }
+      return `Termin angelegt: am ${formatGermanDateTime(startDate)} - ${target}. Steht in deinem Kalender.`;
     }
     case "globe_city":
       if (!target) return fallback();

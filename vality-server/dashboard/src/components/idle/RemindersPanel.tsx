@@ -6,11 +6,13 @@ import HudFrame from "../layout/HudFrame";
 import Skeleton from "../layout/Skeleton";
 import "./RemindersPanel.css";
 
-// Zeigt, was ansteht - ausgeloest wird eine Erinnerung serverseitig, egal
-// ob das Dashboard gerade offen ist (siehe reminders/scheduler.ts). Sag
-// "Erinnere mich morgen um neun an ...", um eine neue anzulegen.
+// Zeigt, was im echten Kalender ansteht - Vality speichert selbst nichts
+// mehr, die Handy-App legt Termine direkt im Android-Kalender an (siehe
+// calendar/bridge.ts serverseitig). Sag "Erinnere mich morgen um neun an
+// ...", um einen neuen Termin anzulegen; bearbeiten/loeschen passiert
+// direkt in der Kalender-App auf dem Handy.
 export default function RemindersPanel({ delay }: { delay?: number }) {
-  const { reminders, loading, error, remove } = useReminders();
+  const { reminders, loading, error } = useReminders();
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
@@ -29,7 +31,9 @@ export default function RemindersPanel({ delay }: { delay?: number }) {
       )}
       {!loading && error && <p className="reminders-panel__hint reminders-panel__hint--error mono">{error}</p>}
       {!loading && !error && reminders.length === 0 && (
-        <p className="reminders-panel__hint mono">Keine anstehenden Erinnerungen. Sag „Erinnere mich …".</p>
+        <p className="reminders-panel__hint mono">
+          Keine anstehenden Termine gefunden. Sag „Erinnere mich …" - landet direkt in deinem Kalender.
+        </p>
       )}
       <ul className="reminders-panel__list">
         <AnimatePresence initial={false}>
@@ -43,20 +47,11 @@ export default function RemindersPanel({ delay }: { delay?: number }) {
               transition={{ duration: 0.25, ease: [0.22, 0.9, 0.32, 1] }}
             >
               <div className="reminders-panel__main">
-                <span className="reminders-panel__text">{r.text}</span>
-                <span className="reminders-panel__when mono" title={new Date(r.dueAt).toLocaleString("de-DE")}>
-                  {formatUntil(r.dueAt, now)}
+                <span className="reminders-panel__text">{r.title}</span>
+                <span className="reminders-panel__when mono" title={new Date(r.startAt).toLocaleString("de-DE")}>
+                  {formatUntil(r.startAt, now)}
                 </span>
               </div>
-              <button
-                type="button"
-                className="reminders-panel__delete"
-                onClick={() => remove(r.id)}
-                aria-label={`Erinnerung „${r.text}" löschen`}
-                title="Löschen"
-              >
-                ×
-              </button>
             </motion.li>
           ))}
         </AnimatePresence>

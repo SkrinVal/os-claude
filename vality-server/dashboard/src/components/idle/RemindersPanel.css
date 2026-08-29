@@ -63,29 +63,3 @@
   letter-spacing: 0.05em;
   color: var(--accent);
 }
-
-.reminders-panel__delete {
-  flex-shrink: 0;
-  background: transparent;
-  border: 1px solid transparent;
-  color: var(--text-faint);
-  font-size: 14px;
-  line-height: 1;
-  width: 18px;
-  height: 18px;
-  border-radius: 4px;
-  cursor: pointer;
-  transition:
-    color 0.2s,
-    border-color 0.2s,
-    background 0.2s;
-}
-.reminders-panel__delete:hover {
-  color: var(--danger);
-  border-color: rgba(var(--danger-rgb), 0.4);
-  background: rgba(var(--danger-rgb), 0.08);
-}
-.reminders-panel__delete:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 1px;
-}

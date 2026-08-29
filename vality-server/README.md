@@ -413,8 +413,12 @@ gebaut. Weiteres, noch nicht begonnen:
 
 - Code-/Datei-Steuerung ueber die Claude Code CLI selbst
 - System-Steuerung (Apps oeffnen, Lautstaerke)
-- Timer & Erinnerungen mit proaktiver Sprachausgabe (node-cron)
-- Wetter als gesprochene Antwort ("wie wird das Wetter") - das Dashboard
-  zeigt Wetter bereits visuell im Globus-Modus (Open-Meteo), aber Vality
-  liest die Temperatur nicht laut vor
-- Kalender-Integration
+
+**Kalender-Integration**: gebaut. "Erinnere mich morgen um neun an X" legt
+per `hud/nlIntent.ts` einen echten Termin an - nicht in einer eigenen
+Vality-Datei, sondern direkt im Android-Kalender der Handy-App
+(`vality-app/src/features/calendar/write.ts`, `expo-calendar`). Server und
+Handy-App sprechen dabei ueber denselben WebSocket-Hub wie
+`resolve_contact` (Anfrage/Antwort-Muster, siehe `calendar/bridge.ts`).
+"Was steht an" fragt live bei der Handy-App nach; Bearbeiten/Loeschen
+passiert direkt in der Kalender-App auf dem Handy, nicht per Sprachbefehl.

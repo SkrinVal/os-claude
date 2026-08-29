@@ -1,6 +1,7 @@
 import ValityMessaging from "../../modules/vality-messaging/src/ValityMessagingModule";
 import { loadSettings } from "../storage/settings";
 import { findContactsByName } from "../features/contacts/lookup";
+import { createCalendarEvent, listUpcomingCalendarEvents } from "../features/calendar/write";
 import { postToServer } from "../api/client";
 
 // Verbindung zum selben WebSocket-Hub, den auch das PC-Dashboard nutzt.
@@ -15,7 +16,9 @@ let stopped = true;
 type Command =
   | { type: "send_sms"; to: string; body: string }
   | { type: "place_call"; to: string }
-  | { type: "resolve_contact"; requestId: string; name: string };
+  | { type: "resolve_contact"; requestId: string; name: string }
+  | { type: "create_calendar_event"; requestId: string; title: string; startAt: string; endAt: string; notes?: string }
+  | { type: "list_calendar_events"; requestId: string };
 
 function asCommand(msg: unknown): Command | null {
   if (typeof msg !== "object" || msg === null) return null;
@@ -28,6 +31,25 @@ function asCommand(msg: unknown): Command | null {
   }
   if (m.type === "resolve_contact" && typeof m.requestId === "string" && typeof m.name === "string") {
     return { type: "resolve_contact", requestId: m.requestId, name: m.name };
+  }
+  if (
+    m.type === "create_calendar_event" &&
+    typeof m.requestId === "string" &&
+    typeof m.title === "string" &&
+    typeof m.startAt === "string" &&
+    typeof m.endAt === "string"
+  ) {
+    return {
+      type: "create_calendar_event",
+      requestId: m.requestId,
+      title: m.title,
+      startAt: m.startAt,
+      endAt: m.endAt,
+      notes: typeof m.notes === "string" ? m.notes : undefined,
+    };
+  }
+  if (m.type === "list_calendar_events" && typeof m.requestId === "string") {
+    return { type: "list_calendar_events", requestId: m.requestId };
   }
   return null;
 }
@@ -68,6 +90,32 @@ async function handleCommand(raw: unknown): Promise<void> {
       // Trotzdem eine leere Antwort schicken, damit der Server nicht bis
       // zum Timeout wartet.
       await postToServer("/api/contacts/resolve", { requestId: command.requestId, matches: [] }).catch(() => {});
+    }
+    return;
+  }
+
+  if (command.type === "create_calendar_event") {
+    try {
+      const result = await createCalendarEvent(command.title, command.startAt, command.endAt, command.notes);
+      await postToServer("/api/calendar/event-result", { requestId: command.requestId, ...result });
+    } catch (err) {
+      console.warn("Termin anlegen fehlgeschlagen:", err);
+      await postToServer("/api/calendar/event-result", {
+        requestId: command.requestId,
+        ok: false,
+        error: err instanceof Error ? err.message : String(err),
+      }).catch(() => {});
+    }
+    return;
+  }
+
+  if (command.type === "list_calendar_events") {
+    try {
+      const events = await listUpcomingCalendarEvents();
+      await postToServer("/api/calendar/events-result", { requestId: command.requestId, events });
+    } catch (err) {
+      console.warn("Termine auflisten fehlgeschlagen:", err);
+      await postToServer("/api/calendar/events-result", { requestId: command.requestId, events: [] }).catch(() => {});
     }
   }
 }
