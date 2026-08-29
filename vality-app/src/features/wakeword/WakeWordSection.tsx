@@ -78,7 +78,12 @@ export default function WakeWordSection({ settings, onSettingsChange }: Props) {
   }
 
   return (
-    <Panel title="Weckwort · „Hi Jarvis“">
+    <Panel
+      title="Weckwort · „Hi Jarvis“"
+      status={{ label: settings.wakeWordEnabled ? "AKTIV" : "AUS", tone: settings.wakeWordEnabled ? "ok" : "neutral" }}
+      collapsible
+      defaultExpanded={false}
+    >
       <Text style={styles.hint}>
         Hört offline im Hintergrund mit, auch wenn die App geschlossen ist -
         solange das Handy eingeschaltet ist. Braucht einen kostenlosen

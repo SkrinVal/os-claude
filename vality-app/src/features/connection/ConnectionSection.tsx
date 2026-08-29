@@ -2,7 +2,6 @@ import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import Panel from "../../ui/Panel";
 import Field from "../../ui/Field";
-import StatusPill from "../../ui/StatusPill";
 import { colors } from "../../ui/theme";
 import { saveSettings, type AppSettings } from "../../storage/settings";
 
@@ -20,11 +19,10 @@ export default function ConnectionSection({ settings, onSettingsChange, connecte
   }
 
   return (
-    <Panel title="Server-Verbindung">
-      <View style={styles.statusRow}>
-        <StatusPill label={connected ? "VERBUNDEN" : "GETRENNT"} tone={connected ? "ok" : "danger"} />
-      </View>
-
+    <Panel
+      title="Server-Verbindung"
+      status={{ label: connected ? "VERBUNDEN" : "GETRENNT", tone: connected ? "ok" : "danger" }}
+    >
       <Field
         label="Server-URL (PC im selben Netz)"
         placeholder="http://192.168.1.20:4390"
@@ -52,6 +50,5 @@ export default function ConnectionSection({ settings, onSettingsChange, connecte
 }
 
 const styles = StyleSheet.create({
-  statusRow: { flexDirection: "row" },
   hint: { color: colors.textFaint, fontSize: 11, lineHeight: 16 },
 });

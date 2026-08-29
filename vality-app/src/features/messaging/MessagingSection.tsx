@@ -61,8 +61,15 @@ export default function MessagingSection({ settings, onSettingsChange }: Props) 
     await updateSettings({ smsEnabled: value });
   }
 
+  const active = settings.whatsappEnabled || settings.smsEnabled;
+
   return (
-    <Panel title="Nachrichten">
+    <Panel
+      title="Nachrichten"
+      status={{ label: active ? "AKTIV" : "AUS", tone: active ? "ok" : "neutral" }}
+      collapsible
+      defaultExpanded={false}
+    >
       <Text style={styles.hint}>
         WhatsApp-Vorschauen kommen ueber die Benachrichtigungs-Vorschau des
         Systems - kein offizieller WhatsApp-Zugriff, siehe README fuer die

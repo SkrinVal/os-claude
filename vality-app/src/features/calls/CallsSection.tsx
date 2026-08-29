@@ -36,7 +36,15 @@ export default function CallsSection() {
   }
 
   return (
-    <Panel title="Anrufe & Kontakte">
+    <Panel
+      title="Anrufe & Kontakte"
+      status={{
+        label: contactsGranted === null ? "PRÜFE…" : contactsGranted ? "BEREIT" : "EINRICHTEN",
+        tone: contactsGranted === null ? "neutral" : contactsGranted ? "ok" : "warn",
+      }}
+      collapsible
+      defaultExpanded={false}
+    >
       <Text style={styles.hint}>
         Damit "Ruf X an" oder "Schreib X, dass..." funktioniert, muss die
         App Namen in Telefonnummern übersetzen können.

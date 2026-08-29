@@ -9,6 +9,7 @@ import CalendarSection from "../features/calendar/CalendarSection";
 import WakeWordSection from "../features/wakeword/WakeWordSection";
 import StatusPill from "../ui/StatusPill";
 import CoreGlyph from "../ui/CoreGlyph";
+import OverviewStrip from "../ui/OverviewStrip";
 import { colors } from "../ui/theme";
 import { DEFAULT_SETTINGS, loadSettings, type AppSettings } from "../storage/settings";
 
@@ -64,8 +65,18 @@ export default function DashboardScreen() {
     );
   }
 
+  const overviewItems = [
+    { label: "PC", active: connected },
+    { label: "Anwesenheit", active: settings.presenceEnabled },
+    { label: "Nachrichten", active: settings.whatsappEnabled || settings.smsEnabled },
+    { label: "Kalender", active: !!settings.calendarId },
+    { label: "Weckwort", active: settings.wakeWordEnabled },
+  ];
+
   return (
     <SafeAreaView style={styles.container}>
+      <View style={styles.glow} pointerEvents="none" />
+
       <LinearGradient colors={[colors.surfaceRaised, colors.ground]} style={styles.header}>
         <View style={styles.brandRow}>
           <CoreGlyph size={40} />
@@ -77,8 +88,13 @@ export default function DashboardScreen() {
         <StatusPill label={connected ? "PC ERREICHBAR" : "PC NICHT ERREICHBAR"} tone={connected ? "ok" : "danger"} />
       </LinearGradient>
 
+      <OverviewStrip items={overviewItems} />
+
       <ScrollView contentContainerStyle={styles.scroll}>
+        <Text style={styles.groupLabel}>Verbindung</Text>
         <ConnectionSection settings={settings} onSettingsChange={setSettings} connected={connected} />
+
+        <Text style={styles.groupLabel}>Automatisierung</Text>
         <PresenceSection settings={settings} onSettingsChange={setSettings} />
         <MessagingSection settings={settings} onSettingsChange={setSettings} />
         <CallsSection />
@@ -92,6 +108,25 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.ground },
   loading: { color: colors.text, padding: 20 },
+  glow: {
+    position: "absolute",
+    top: -220,
+    left: "50%",
+    marginLeft: -260,
+    width: 520,
+    height: 520,
+    borderRadius: 260,
+    backgroundColor: colors.accentDim,
+    opacity: 0.16,
+  },
+  groupLabel: {
+    color: colors.textFaint,
+    fontSize: 10.5,
+    letterSpacing: 2,
+    textTransform: "uppercase",
+    marginTop: 4,
+    marginBottom: -4,
+  },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",

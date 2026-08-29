@@ -74,7 +74,12 @@ export default function CalendarSection({ settings, onSettingsChange }: Props) {
   }
 
   return (
-    <Panel title="Kalender">
+    <Panel
+      title="Kalender"
+      status={{ label: settings.calendarId ? "GESETZT" : "AUTOMATISCH", tone: settings.calendarId ? "ok" : "neutral" }}
+      collapsible
+      defaultExpanded={false}
+    >
       <Text style={styles.hint}>
         Termine, die du per Sprachbefehl anlegst ("Erinnere mich …"), landen
         in diesem Kalender.

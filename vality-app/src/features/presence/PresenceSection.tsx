@@ -90,7 +90,12 @@ export default function PresenceSection({ settings, onSettingsChange }: Props) {
   }
 
   return (
-    <Panel title="Anwesenheit">
+    <Panel
+      title="Anwesenheit"
+      status={{ label: settings.presenceEnabled ? "AKTIV" : "AUS", tone: settings.presenceEnabled ? "ok" : "neutral" }}
+      collapsible
+      defaultExpanded={false}
+    >
       <Text style={styles.hint}>
         Standort wird nur lokal ausgewertet. Es geht nur ein einzelnes
         Ereignis (angekommen/verlassen) an deinen PC, keine laufenden
