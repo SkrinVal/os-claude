@@ -1,0 +1,70 @@
+name: Vality-App Android-Build
+
+# Baut die Handy-App direkt hier auf GitHub (kein Expo-Account/EAS Build
+# noetig) - Ergebnis ist eine fertige, installierbare APK als Download-
+# Anhang am fertigen Lauf. Manuell ausloesbar (Tab "Actions" -> dieser
+# Workflow -> "Run workflow") oder automatisch bei Aenderungen an
+# vality-app/.
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - "**"
+    paths:
+      - "vality-app/**"
+      - ".github/workflows/build-vality-app.yml"
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: vality-app
+    steps:
+      - name: Repository auschecken
+        uses: actions/checkout@v4
+
+      - name: Node.js einrichten
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: vality-app/package-lock.json
+
+      - name: Java (JDK 17) einrichten
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Android-SDK einrichten
+        uses: android-actions/setup-android@v3
+
+      - name: Abhängigkeiten installieren
+        run: npm ci
+
+      # Erzeugt den nativen android/-Ordner aus app.config.ts - inkl.
+      # Autolinking des eigenen modules/vality-messaging-Moduls und von
+      # expo-calendar. Der Ordner ist bewusst nicht eingecheckt (siehe
+      # .gitignore), entsteht bei jedem Lauf frisch.
+      - name: Natives Android-Projekt erzeugen (expo prebuild)
+        run: npx expo prebuild --platform android --no-install
+
+      - name: Gradle-Wrapper ausführbar machen
+        run: chmod +x android/gradlew
+
+      # Unsignierter Debug-Build - fertig zum Installieren ("Aus unbekannten
+      # Quellen installieren" auf dem Handy erlauben), braucht keinen
+      # eigenen Signierschlüssel. Für eine Play-Store-taugliche Release-
+      # Version müsste ein Keystore als Secret hinterlegt werden - für den
+      # eigenen Gebrauch auf dem eigenen Handy reicht das Debug-APK.
+      - name: APK bauen (assembleDebug)
+        working-directory: vality-app/android
+        run: ./gradlew assembleDebug --no-daemon
+
+      - name: APK als Download bereitstellen
+        uses: actions/upload-artifact@v4
+        with:
+          name: vality-app-debug-apk
+          path: vality-app/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
