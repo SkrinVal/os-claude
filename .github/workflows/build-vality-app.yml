@@ -53,18 +53,23 @@ jobs:
       - name: Gradle-Wrapper ausführbar machen
         run: chmod +x android/gradlew
 
-      # Unsignierter Debug-Build - fertig zum Installieren ("Aus unbekannten
-      # Quellen installieren" auf dem Handy erlauben), braucht keinen
-      # eigenen Signierschlüssel. Für eine Play-Store-taugliche Release-
-      # Version müsste ein Keystore als Secret hinterlegt werden - für den
-      # eigenen Gebrauch auf dem eigenen Handy reicht das Debug-APK.
-      - name: APK bauen (assembleDebug)
+      # Release-Build, nicht Debug: ein Debug-APK (assembleDebug) haengt am
+      # "Development Client" von expo-dev-client - die App zeigt dann nur
+      # den Bildschirm "Start a local development server with npx expo
+      # start" und braucht dafuer einen laufenden PC, kein eigenstaendiges
+      # Programm. Ein Release-Build hat den JS-Code fest eingebaut und
+      # startet direkt in die echte App, ganz ohne PC/Metro-Server.
+      # Signiert wird trotzdem automatisch mit dem generierten Debug-
+      # Schluessel (React-Native-Standard-Vorlage setzt signingConfigs.debug
+      # auch fuer den release-Buildtyp) - reicht zum Sideloaden auf dem
+      # eigenen Handy, kein eigener Keystore noetig.
+      - name: APK bauen (assembleRelease)
         working-directory: vality-app/android
-        run: ./gradlew assembleDebug --no-daemon
+        run: ./gradlew assembleRelease --no-daemon
 
       - name: APK als Download bereitstellen
         uses: actions/upload-artifact@v4
         with:
-          name: vality-app-debug-apk
-          path: vality-app/android/app/build/outputs/apk/debug/app-debug.apk
+          name: vality-app-release-apk
+          path: vality-app/android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
