@@ -7,13 +7,15 @@ interface Props {
   onPress: () => void;
   disabled?: boolean;
   variant?: "solid" | "outline";
+  /** compact = kleine Inline-Pille (z.B. "Anfragen" neben einem Status), default = volle Breite. */
+  size?: "default" | "compact";
   style?: StyleProp<ViewStyle>;
 }
 
 // Einheitlicher Button statt der bisher pro Karte leicht unterschiedlichen
 // Ad-hoc-Buttons (Presence, Kalender, Anrufe) - plus spuerbares Press-
 // Feedback (kurzes Einsinken) statt eines Tastendrucks ohne jede Reaktion.
-export default function PrimaryButton({ label, onPress, disabled, variant = "solid", style }: Props) {
+export default function PrimaryButton({ label, onPress, disabled, variant = "solid", size = "default", style }: Props) {
   const scale = useRef(new Animated.Value(1)).current;
 
   function pressIn() {
@@ -24,7 +26,7 @@ export default function PrimaryButton({ label, onPress, disabled, variant = "sol
   }
 
   return (
-    <Animated.View style={{ transform: [{ scale }] }}>
+    <Animated.View style={[{ transform: [{ scale }] }, size === "compact" && styles.compactWrap]}>
       <Pressable
         onPress={onPress}
         onPressIn={pressIn}
@@ -32,6 +34,7 @@ export default function PrimaryButton({ label, onPress, disabled, variant = "sol
         disabled={disabled}
         style={[
           styles.base,
+          size === "compact" && styles.compact,
           variant === "solid" ? styles.solid : styles.outline,
           disabled && styles.disabled,
           style,
@@ -50,6 +53,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     alignItems: "center",
   },
+  compactWrap: { alignSelf: "flex-start" },
+  compact: { paddingVertical: 8, paddingHorizontal: 14, borderRadius: 8 },
   solid: { backgroundColor: colors.accentDim },
   outline: {
     backgroundColor: colors.accentSoft,
@@ -58,5 +63,5 @@ const styles = StyleSheet.create({
   },
   disabled: { opacity: 0.5 },
   solidText: { color: colors.text, fontWeight: "600", fontSize: 13 },
-  outlineText: { color: colors.accent, fontWeight: "600", fontSize: 13 },
+  outlineText: { color: colors.accent, fontWeight: "600", fontSize: 12 },
 });

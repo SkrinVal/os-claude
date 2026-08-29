@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import Panel from "../../ui/Panel";
+import PrimaryButton from "../../ui/PrimaryButton";
 import StatusPill from "../../ui/StatusPill";
 import { colors } from "../../ui/theme";
 import { hasContactsPermission, requestContactsPermission } from "../contacts/lookup";
@@ -58,9 +59,7 @@ export default function CallsSection() {
             tone={contactsGranted ? "ok" : "warn"}
           />
         </View>
-        <TouchableOpacity style={styles.button} onPress={onRequestContacts}>
-          <Text style={styles.buttonText}>Anfragen</Text>
-        </TouchableOpacity>
+        <PrimaryButton label="Anfragen" onPress={onRequestContacts} variant="outline" size="compact" />
       </View>
 
       <View style={styles.row}>
@@ -71,9 +70,7 @@ export default function CallsSection() {
             tone={callGranted ? "ok" : "neutral"}
           />
         </View>
-        <TouchableOpacity style={styles.button} onPress={onRequestCall}>
-          <Text style={styles.buttonText}>Anfragen</Text>
-        </TouchableOpacity>
+        <PrimaryButton label="Anfragen" onPress={onRequestCall} variant="outline" size="compact" />
       </View>
 
       <Text style={styles.hint}>
@@ -100,15 +97,6 @@ const styles = StyleSheet.create({
   },
   rowLabel: { flex: 1, gap: 6 },
   label: { color: colors.text, fontSize: 14 },
-  button: {
-    backgroundColor: colors.accentSoft,
-    borderColor: colors.accentDim,
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-  },
-  buttonText: { color: colors.accent, fontSize: 12, fontWeight: "600" },
   linkButton: { paddingVertical: 4 },
   linkButtonText: { color: colors.accent, fontSize: 12, textDecorationLine: "underline" },
 });
