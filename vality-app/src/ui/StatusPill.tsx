@@ -1,5 +1,5 @@
-import React from "react";
-import { StyleSheet, Text, View } from "react-native";
+import React, { useEffect, useRef } from "react";
+import { Animated, Easing, StyleSheet, Text, View } from "react-native";
 import { colors } from "./theme";
 
 type Tone = "ok" | "warn" | "danger" | "neutral";
@@ -13,9 +13,24 @@ const TONE_COLOR: Record<Tone, string> = {
 
 export default function StatusPill({ label, tone }: { label: string; tone: Tone }) {
   const color = TONE_COLOR[tone];
+  const pulse = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulse, { toValue: 1, duration: 1300, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+        Animated.timing(pulse, { toValue: 0, duration: 1300, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [pulse]);
+
+  const dotOpacity = pulse.interpolate({ inputRange: [0, 1], outputRange: [0.55, 1] });
+
   return (
     <View style={[styles.pill, { borderColor: color }]}>
-      <View style={[styles.dot, { backgroundColor: color }]} />
+      <Animated.View style={[styles.dot, { backgroundColor: color, opacity: dotOpacity }]} />
       <Text style={[styles.text, { color }]}>{label}</Text>
     </View>
   );

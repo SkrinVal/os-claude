@@ -1,11 +1,13 @@
 import React, { useEffect, useRef, useState } from "react";
 import { SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import ConnectionSection from "../features/connection/ConnectionSection";
 import PresenceSection from "../features/presence/PresenceSection";
 import MessagingSection from "../features/messaging/MessagingSection";
 import CallsSection from "../features/calls/CallsSection";
 import CalendarSection from "../features/calendar/CalendarSection";
 import StatusPill from "../ui/StatusPill";
+import CoreGlyph from "../ui/CoreGlyph";
 import { colors } from "../ui/theme";
 import { DEFAULT_SETTINGS, loadSettings, type AppSettings } from "../storage/settings";
 
@@ -63,13 +65,16 @@ export default function DashboardScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
+      <LinearGradient colors={[colors.surfaceRaised, colors.ground]} style={styles.header}>
         <View style={styles.brandRow}>
-          <View style={styles.brandDot} />
-          <Text style={styles.brand}>VALITY · AI</Text>
+          <CoreGlyph size={40} />
+          <View>
+            <Text style={styles.brand}>VALITY · AI</Text>
+            <Text style={styles.brandSub}>Handy-Begleiter</Text>
+          </View>
         </View>
         <StatusPill label={connected ? "PC ERREICHBAR" : "PC NICHT ERREICHBAR"} tone={connected ? "ok" : "danger"} />
-      </View>
+      </LinearGradient>
 
       <ScrollView contentContainerStyle={styles.scroll}>
         <ConnectionSection settings={settings} onSettingsChange={setSettings} connected={connected} />
@@ -94,8 +99,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.line,
   },
-  brandRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  brandDot: { width: 7, height: 7, borderRadius: 3.5, backgroundColor: colors.accent },
-  brand: { color: colors.accent, fontWeight: "700", letterSpacing: 2, fontSize: 13 },
+  brandRow: { flexDirection: "row", alignItems: "center", gap: 12 },
+  brand: { color: colors.accent, fontWeight: "700", letterSpacing: 2, fontSize: 14 },
+  brandSub: { color: colors.textFaint, fontSize: 10.5, letterSpacing: 1, marginTop: 2 },
   scroll: { padding: 18, gap: 16 },
 });
