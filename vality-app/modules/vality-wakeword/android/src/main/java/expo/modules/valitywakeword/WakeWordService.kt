@@ -15,7 +15,6 @@ import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import androidx.core.app.NotificationCompat
-import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
 
 private const val CHANNEL_ID = "vality_wakeword"
@@ -46,16 +45,15 @@ class WakeWordService : Service() {
       return START_NOT_STICKY
     }
 
-    ServiceCompat.startForeground(
-      this,
-      NOTIFICATION_ID,
-      buildNotification(),
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+      startForeground(
+        NOTIFICATION_ID,
+        buildNotification(),
         android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
-      } else {
-        0
-      }
-    )
+      )
+    } else {
+      startForeground(NOTIFICATION_ID, buildNotification())
+    }
 
     startListening()
     isRunning = true
