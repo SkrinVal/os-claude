@@ -9,7 +9,13 @@ export async function askClaude(prompt: string): Promise<string> {
   const args = ["-p", prompt, ...config.claude.extraArgs];
 
   return new Promise<string>((resolve, reject) => {
-    const proc = spawn(config.claude.bin, args, { shell: false });
+    // Auf Windows ist eine global per npm installierte CLI wie "claude" ein
+    // .cmd-Shim, kein echtes .exe - spawn() mit shell:false findet das nicht
+    // (CreateProcess kennt .cmd nicht, PATHEXT wird nur ueber eine Shell
+    // aufgeloest). Deshalb dort ueber die Shell starten, auf Mac/Linux wie
+    // bisher direkt (whisper.cpp/Piper sind echte Binaries, davon nicht
+    // betroffen, siehe stt/whisper.ts, tts/piper.ts).
+    const proc = spawn(config.claude.bin, args, { shell: process.platform === "win32" });
 
     let stdout = "";
     let stderr = "";
