@@ -1,12 +1,13 @@
 import { askClaude } from "../brain/claude";
 import { broadcast } from "../ws/hub";
 import { buildCityBriefing } from "./cityBriefing";
+import { buildOpeningBriefing } from "./openingBriefing";
 import { features } from "../config/features";
 import { addFact, hasSimilarFact, replaceFact } from "../memory/store";
 import { createCalendarEventViaPhone } from "../calendar/bridge";
 import { formatGermanDateTime } from "../reminders/format";
 
-const ALLOWED_ACTIONS = ["globe_city", "globe_open", "research", "idle", "remind", "none"] as const;
+const ALLOWED_ACTIONS = ["globe_city", "globe_open", "research", "idle", "remind", "briefing", "none"] as const;
 type Action = (typeof ALLOWED_ACTIONS)[number];
 
 // Feste, kleine Kategorien statt Freitext - macht die Gedaechtnis-Karte im
@@ -59,16 +60,18 @@ function buildClassifierPrompt(transcript: string, contextBlock: string): string
     '- "research": Die Anfrage will etwas über eine Person, ein Thema oder einen Begriff nachschlagen/erfahren (nicht über einen Ort). "target" = die Person oder das Thema.',
     '- "idle": Die Anfrage will zurück zur Übersicht/zum Startbildschirm.',
     '- "remind": Die Anfrage will einen Termin/eine Erinnerung im Kalender anlegen ("Erinnere mich ...", "Erinnere mich daran, dass ...", "Denk dran, dass ...", "Trag ein, dass ..."). "target" = der Titel des Termins, OHNE die Zeitangabe.',
+    '- "briefing": Die Anfrage will eine allgemeine Zusammenfassung/einen Überblick hören - "was ist los", "was gibt\'s Neues", "was passiert gerade (in der Welt)", "gib mir ein Briefing", "was steht heute an". NICHT bei einer Frage zu einem bestimmten Ort/Thema/einer bestimmten Person (das ist "globe_city"/"research").',
     '- "none": Keine Navigation - eine normale Frage, Unterhaltung, Aussage oder ein anderer Befehl.',
     "",
     "Antworte AUSSCHLIESSLICH mit einem einzigen validen JSON-Objekt, keine Markdown-Codeblöcke, kein Text davor oder danach:",
-    '{"action": "globe_city|globe_open|research|idle|remind|none", "target": "...", "reply": "...", "learn": "...", "category": "...", "supersedes": "...", "remindAt": "..."}',
+    '{"action": "globe_city|globe_open|research|idle|remind|briefing|none", "target": "...", "reply": "...", "learn": "...", "category": "...", "supersedes": "...", "remindAt": "..."}',
     "",
     '"reply" ist deine kurze, natürliche gesprochene Antwort auf Deutsch.',
     'Bei "globe_city" und "research" reicht ein knapper Bestätigungssatz ("Ich zeige dir X." / "Ich suche X.") - die eigentlichen Fakten (Wetter, Nachrichten, Rechercheergebnisse) kommen separat aus echten Datenquellen. Erfinde dort KEINE Wetterdaten, Zahlen, Ereignisse oder sonstigen Fakten über den Ort/das Thema.',
     'Bei "remind" reicht ebenfalls ein knapper Bestätigungssatz - die genaue Zeitangabe im Bestätigungssatz kommt separat aus "remindAt", nicht von dir formuliert.',
+    'Bei "briefing" bleibt "reply" leer - der eigentliche Inhalt (Termine, Nachrichten) kommt separat aus echten Datenquellen, nicht von dir erfunden.',
     'Bei "none" ist "reply" deine vollständige, hilfreiche Antwort auf die Anfrage - hier normal und ausführlich wie sonst auch antworten.',
-    'Bei "globe_open" und "idle" bleibt "target" leer.',
+    'Bei "globe_open", "idle" und "briefing" bleibt "target" leer.',
     "",
     `"remindAt": NUR bei "action": "remind" - der genannte Zeitpunkt als ISO-8601-Datum/Uhrzeit ohne Zeitzone (z.B. "2026-08-27T09:00:00"), berechnet aus der Zeitangabe im Gesagten ("morgen um 9", "in zwei Stunden", "Freitag um 15 Uhr") ausgehend vom oben genannten aktuellen Datum/Uhrzeit. Ist keine Zeitangabe erkennbar, bleibt "remindAt" leer. Sonst immer leerer String.`,
     "",
@@ -183,6 +186,8 @@ export async function classifyAndRespond(transcript: string, contextBlock: strin
       if (!target) return fallback();
       broadcast({ type: "ui_mode", mode: "globe", city: target });
       return await buildCityBriefing(target);
+    case "briefing":
+      return await buildOpeningBriefing();
     case "none":
     default:
       return fallback();

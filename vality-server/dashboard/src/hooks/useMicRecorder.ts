@@ -73,7 +73,7 @@ export function useMicRecorder() {
   const sendRecording = useCallback(async () => {
     setVoiceState("thinking", "DENKT NACH");
     const raw = concatFloat32(pcmChunksRef.current);
-    const resampled = resampleTo16kHz(raw, captureSampleRateRef.current);
+    const resampled = await resampleTo16kHz(raw, captureSampleRateRef.current);
     const blob = encodeWavPCM16(resampled, 16000);
     const form = new FormData();
     form.append("audio", blob, "input.wav");

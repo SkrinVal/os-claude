@@ -12,7 +12,6 @@ import { presenceRouter } from "./routes/presence";
 import { messagesRouter } from "./routes/messages";
 import { contactsRouter } from "./routes/contacts";
 import { newsRouter } from "./routes/news";
-import { briefingRouter } from "./routes/briefing";
 import { memoryRouter } from "./routes/memory";
 import { calendarRouter } from "./routes/calendar";
 import { attachWebSocketServer } from "./ws/hub";
@@ -62,8 +61,6 @@ async function main(): Promise<void> {
   if (features.news) {
     console.log("Nachrichten: aktiv, GET /api/news liefert den Tagesschau-Feed (5 Min. Cache).");
   }
-  app.use("/api", briefingRouter);
-  console.log("Briefing: aktiv, POST /api/briefing liefert die gesprochene Begruessung beim Oeffnen.");
   app.use("/api", memoryRouter);
   if (features.memory) {
     console.log("Gedaechtnis: aktiv, GET /api/memory/facts liefert gemerkte + gelernte Fakten fuers Dashboard.");

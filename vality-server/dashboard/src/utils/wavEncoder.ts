@@ -3,21 +3,28 @@
 // wird hier client-seitig aus rohen PCM-Samples ein 16kHz-Mono-WAV gebaut,
 // statt die Aufnahme unkonvertiert an den Server zu schicken.
 
-// Einfache lineare Resampling - fuer Sprache ausreichend, kein
-// Tiefpassfilter noetig bei einer Zielrate von 16kHz.
-export function resampleTo16kHz(input: Float32Array, inputSampleRate: number): Float32Array {
+// Nutzt den eingebauten Resampler des Browsers (OfflineAudioContext bei der
+// gewuenschten Zielrate rendern) statt einer selbstgebauten linearen
+// Interpolation - bei ueblichen Aufnahmeraten wie 48000Hz ist 48000/16000
+// exakt 3, eine einfache lineare Interpolation entartet dann zu reiner
+// Dezimierung (jeder dritte Sample, ohne Tiefpassfilter) und aliast hoerbar,
+// was die Erkennung messbar verschlechtert. Der Browser-Resampler filtert
+// sauber vor.
+export async function resampleTo16kHz(input: Float32Array, inputSampleRate: number): Promise<Float32Array> {
   if (inputSampleRate === 16000) return input;
-  const ratio = inputSampleRate / 16000;
-  const outLength = Math.max(1, Math.round(input.length / ratio));
-  const output = new Float32Array(outLength);
-  for (let i = 0; i < outLength; i++) {
-    const srcIndex = i * ratio;
-    const i0 = Math.floor(srcIndex);
-    const i1 = Math.min(i0 + 1, input.length - 1);
-    const frac = srcIndex - i0;
-    output[i] = input[i0] * (1 - frac) + input[i1] * frac;
-  }
-  return output;
+
+  const targetLength = Math.max(1, Math.ceil((input.length * 16000) / inputSampleRate));
+  const offlineCtx = new OfflineAudioContext(1, targetLength, 16000);
+  const buffer = offlineCtx.createBuffer(1, input.length, inputSampleRate);
+  buffer.copyToChannel(Float32Array.from(input), 0);
+
+  const source = offlineCtx.createBufferSource();
+  source.buffer = buffer;
+  source.connect(offlineCtx.destination);
+  source.start();
+
+  const rendered = await offlineCtx.startRendering();
+  return rendered.getChannelData(0);
 }
 
 export function encodeWavPCM16(samples: Float32Array, sampleRate: number): Blob {

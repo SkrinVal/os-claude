@@ -3,7 +3,6 @@ import { AnimatePresence, motion } from "framer-motion";
 import { HudStoreProvider, useHudDispatch, useHudState } from "./state/store";
 import { useVoiceSocket, type UiModeEvent } from "./hooks/useVoiceSocket";
 import { useSystemStatus, useInitialHistory } from "./hooks/useSystemStatus";
-import { useBriefing } from "./hooks/useBriefing";
 import { runResearch } from "./services/wikipedia";
 import { geocodeAndFocusCity } from "./services/geocoding";
 import TopBar from "./components/layout/TopBar";
@@ -116,9 +115,6 @@ function Dashboard() {
 
 export default function App() {
   const [booted, setBooted] = useState(() => shouldSkipBoot());
-  // Erst briefen, wenn die Boot-Sequenz durch ist - sonst ueberlagert die
-  // Begruessung akustisch/visuell die Eroeffnungsanimation.
-  useBriefing(booted);
 
   function finishBoot() {
     try {
