@@ -12,6 +12,7 @@ import CoreGlyph from "../ui/CoreGlyph";
 import OverviewStrip from "../ui/OverviewStrip";
 import BootScreen from "../ui/BootScreen";
 import HudGrid from "../ui/HudGrid";
+import { StaggerContext } from "../ui/stagger";
 import { colors } from "../ui/theme";
 import { DEFAULT_SETTINGS, loadSettings, type AppSettings } from "../storage/settings";
 
@@ -23,6 +24,7 @@ export default function DashboardScreen() {
   const [connected, setConnected] = useState(false);
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
+  const staggerCounter = useRef({ current: 0 }).current;
 
   useEffect(() => {
     loadSettings().then((s) => {
@@ -95,15 +97,17 @@ export default function DashboardScreen() {
       <OverviewStrip items={overviewItems} />
 
       <ScrollView contentContainerStyle={styles.scroll}>
-        <Text style={styles.groupLabel}>Verbindung</Text>
-        <ConnectionSection settings={settings} onSettingsChange={setSettings} connected={connected} />
+        <StaggerContext.Provider value={staggerCounter}>
+          <Text style={styles.groupLabel}>Verbindung</Text>
+          <ConnectionSection settings={settings} onSettingsChange={setSettings} connected={connected} />
 
-        <Text style={styles.groupLabel}>Automatisierung</Text>
-        <PresenceSection settings={settings} onSettingsChange={setSettings} />
-        <MessagingSection settings={settings} onSettingsChange={setSettings} />
-        <CallsSection />
-        <CalendarSection settings={settings} onSettingsChange={setSettings} />
-        <WakeWordSection settings={settings} onSettingsChange={setSettings} />
+          <Text style={styles.groupLabel}>Automatisierung</Text>
+          <PresenceSection settings={settings} onSettingsChange={setSettings} />
+          <MessagingSection settings={settings} onSettingsChange={setSettings} />
+          <CallsSection />
+          <CalendarSection settings={settings} onSettingsChange={setSettings} />
+          <WakeWordSection settings={settings} onSettingsChange={setSettings} />
+        </StaggerContext.Provider>
       </ScrollView>
     </SafeAreaView>
   );

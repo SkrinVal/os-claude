@@ -7,8 +7,19 @@ interface Item {
   active: boolean;
 }
 
-function Chip({ label, active }: Item) {
+function Chip({ label, active, index }: Item & { index: number }) {
   const pulse = useRef(new Animated.Value(0)).current;
+  const enter = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(enter, {
+      toValue: 1,
+      duration: 320,
+      delay: index * 60,
+      easing: Easing.out(Easing.back(1.4)),
+      useNativeDriver: true,
+    }).start();
+  }, [enter, index]);
 
   useEffect(() => {
     if (!active) return;
@@ -25,10 +36,16 @@ function Chip({ label, active }: Item) {
   const dotOpacity = active ? pulse.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1] }) : 1;
 
   return (
-    <View style={[styles.chip, active && styles.chipActive]}>
+    <Animated.View
+      style={[
+        styles.chip,
+        active && styles.chipActive,
+        { opacity: enter, transform: [{ scale: enter.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1] }) }] },
+      ]}
+    >
       <Animated.View style={[styles.dot, active ? styles.dotOn : styles.dotOff, { opacity: dotOpacity }]} />
       <Text style={[styles.label, active && styles.labelOn]}>{label}</Text>
-    </View>
+    </Animated.View>
   );
 }
 
@@ -36,12 +53,13 @@ function Chip({ label, active }: Item) {
 // einklappbaren Karten darunter (Verbindung, Anwesenheit, Nachrichten,
 // Anrufe, Kalender, Weckwort) soll man den Gesamtzustand auf einen Blick
 // sehen, ohne jede Karte einzeln aufzuklappen. Aktive Punkte pulsieren
-// dezent, wie der Rest des Systems (StatusPill, CoreGlyph).
+// dezent, wie der Rest des Systems (StatusPill, CoreGlyph). Chips poppen
+// beim Laden nacheinander herein statt alle gleichzeitig.
 export default function OverviewStrip({ items }: { items: Item[] }) {
   return (
     <View style={styles.row}>
-      {items.map((item) => (
-        <Chip key={item.label} label={item.label} active={item.active} />
+      {items.map((item, index) => (
+        <Chip key={item.label} label={item.label} active={item.active} index={index} />
       ))}
     </View>
   );

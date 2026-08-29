@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Animated, Easing, Pressable, StyleSheet, Text, View, type LayoutChangeEvent, type ViewStyle } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { colors } from "./theme";
+import { useStaggerDelay } from "./stagger";
 
 type Tone = "ok" | "warn" | "danger" | "neutral";
 
@@ -42,15 +43,17 @@ export default function Panel({ title, children, style, status, collapsible, def
   const chevron = useRef(new Animated.Value(defaultExpanded ? 1 : 0)).current;
   const progress = useRef(new Animated.Value(defaultExpanded ? 1 : 0)).current;
   const headerScale = useRef(new Animated.Value(1)).current;
+  const staggerDelay = useStaggerDelay();
 
   useEffect(() => {
     Animated.timing(enter, {
       toValue: 1,
       duration: 420,
+      delay: staggerDelay,
       easing: Easing.out(Easing.cubic),
       useNativeDriver: true,
     }).start();
-  }, [enter]);
+  }, [enter, staggerDelay]);
 
   function toggle() {
     const next = !expanded;
