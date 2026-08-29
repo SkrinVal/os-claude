@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import os from "node:os";
 import { config } from "../config";
 
 /**
@@ -15,7 +16,19 @@ export async function askClaude(prompt: string): Promise<string> {
     // aufgeloest). Deshalb dort ueber die Shell starten, auf Mac/Linux wie
     // bisher direkt (whisper.cpp/Piper sind echte Binaries, davon nicht
     // betroffen, siehe stt/whisper.ts, tts/piper.ts).
-    const proc = spawn(config.claude.bin, args, { shell: process.platform === "win32" });
+    //
+    // cwd bewusst auf ein Verzeichnis AUSSERHALB dieses Repos gesetzt: die
+    // Claude-CLI sucht beim Start selbststaendig nach einer CLAUDE.md im
+    // aktuellen und in allen Elternverzeichnissen. Liefe sie mit dem
+    // Arbeitsverzeichnis dieses Servers (irgendwo unter os-claude/), wuerde
+    // sie die CLAUDE.md im Repo-Root laden - die gehoert aber zu einem
+    // komplett anderen, unabhaengigen Projekt in diesem Repo und wuerde
+    // Vality voellig fremde Verhaltensregeln aufzwingen (siehe Session:
+    // "Woran soll ich arbeiten?" statt einer normalen Antwort).
+    const proc = spawn(config.claude.bin, args, {
+      shell: process.platform === "win32",
+      cwd: os.tmpdir(),
+    });
 
     let stdout = "";
     let stderr = "";

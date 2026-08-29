@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useHudDispatch, useHudState } from "../state/store";
+import { claimInteraction } from "../state/interactionGate";
 
 // Verbindet mit demselben WebSocket-Hub, den auch die Handy-App nutzt.
 // Kennt die bestehenden Event-Typen (interaction/error/mic_status) und ist
@@ -59,6 +60,9 @@ export function useVoiceSocket(onModeEvent?: (event: UiModeEvent) => void) {
         }
 
         if (msg.type === "interaction") {
+          // Vom Server auch direkt per HTTP an die eigene Aufnahme
+          // beantwortet (siehe useMicRecorder.ts) - nicht doppelt behandeln.
+          if (!claimInteraction(msg.id)) return;
           dispatch({
             type: "ADD_LOG_ENTRY",
             entry: { id: msg.id, transcript: msg.transcript, reply: msg.reply, ts: msg.ts, kind: msg.kind },

@@ -1,5 +1,6 @@
 import { useCallback, useRef } from "react";
 import { useHudDispatch, useHudState } from "../state/store";
+import { claimInteraction } from "../state/interactionGate";
 import { concatFloat32, encodeWavPCM16, resampleTo16kHz } from "../utils/wavEncoder";
 
 interface VoiceResponse {
@@ -85,12 +86,19 @@ export function useMicRecorder() {
         throw new Error("error" in data ? data.error : "Unbekannter Fehler");
       }
 
-      dispatch({
-        type: "ADD_LOG_ENTRY",
-        entry: { id: data.id, transcript: data.transcript, reply: data.reply, ts: data.ts },
-      });
+      // Der Server schickt dieselbe Interaktion zusaetzlich per WebSocket
+      // (useVoiceSocket.ts, fuer andere Tabs/die Handy-App) - claimInteraction
+      // sorgt dafuer, dass sie nicht doppelt geloggt/abgespielt wird, egal
+      // welcher der beiden Wege zuerst ankommt.
+      const claimed = claimInteraction(data.id);
+      if (claimed) {
+        dispatch({
+          type: "ADD_LOG_ENTRY",
+          entry: { id: data.id, transcript: data.transcript, reply: data.reply, ts: data.ts },
+        });
+      }
 
-      if (data.audioUrl && !mutedRef.current) {
+      if (data.audioUrl && !mutedRef.current && claimed) {
         setVoiceState("speaking", "SPRICHT");
         const audio = new Audio(data.audioUrl);
         const finish = () => {
