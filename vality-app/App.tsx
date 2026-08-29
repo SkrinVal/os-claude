@@ -4,6 +4,7 @@ import { StatusBar } from "expo-status-bar";
 // fuer das Geofencing laeuft (siehe Kommentar in geofence.ts).
 import { syncGeofencingWithSettings } from "./src/features/presence/geofence";
 import { syncMessagingConfig } from "./src/features/messaging/setup";
+import { syncWakeWordConfig } from "./src/features/wakeword/setup";
 import { startCommandListener, stopCommandListener } from "./src/net/wsClient";
 import DashboardScreen from "./src/screens/DashboardScreen";
 
@@ -14,6 +15,9 @@ export default function App() {
     );
     syncMessagingConfig().catch((err) =>
       console.warn("Messaging-Konfiguration beim Start fehlgeschlagen:", err)
+    );
+    syncWakeWordConfig().catch((err) =>
+      console.warn("Weckwort-Konfiguration beim Start fehlgeschlagen:", err)
     );
     startCommandListener();
     return () => stopCommandListener();

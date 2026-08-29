@@ -19,6 +19,10 @@ export interface AppSettings {
   // (siehe features/calendar/). null = automatisch waehlen (bevorzugt den
   // primaeren Account-Kalender), sonst die ID des gewaehlten Kalenders.
   calendarId: string | null;
+  // "Hi Jarvis"-Weckwort im Hintergrund (siehe features/wakeword/). Braucht
+  // einen kostenlosen AccessKey von console.picovoice.ai.
+  wakeWordEnabled: boolean;
+  picovoiceAccessKey: string;
 }
 
 const STORAGE_KEY = "vality.settings.v1";
@@ -31,6 +35,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   whatsappEnabled: false,
   smsEnabled: false,
   calendarId: null,
+  wakeWordEnabled: false,
+  picovoiceAccessKey: "",
 };
 
 export async function loadSettings(): Promise<AppSettings> {

@@ -6,6 +6,7 @@ import PresenceSection from "../features/presence/PresenceSection";
 import MessagingSection from "../features/messaging/MessagingSection";
 import CallsSection from "../features/calls/CallsSection";
 import CalendarSection from "../features/calendar/CalendarSection";
+import WakeWordSection from "../features/wakeword/WakeWordSection";
 import StatusPill from "../ui/StatusPill";
 import CoreGlyph from "../ui/CoreGlyph";
 import { colors } from "../ui/theme";
@@ -82,6 +83,7 @@ export default function DashboardScreen() {
         <MessagingSection settings={settings} onSettingsChange={setSettings} />
         <CallsSection />
         <CalendarSection settings={settings} onSettingsChange={setSettings} />
+        <WakeWordSection settings={settings} onSettingsChange={setSettings} />
       </ScrollView>
     </SafeAreaView>
   );

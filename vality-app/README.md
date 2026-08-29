@@ -2,14 +2,15 @@
 
 Handy-Client fuer das Vality-AI-System. Spricht mit dem PC-Server
 (`vality-server/`) im selben lokalen Netz. Enthaelt Feature 2
-(Anwesenheitserkennung), Feature 3 (Nachrichten vorlesen/diktieren) und
-Feature 4 (Anrufe & Kontakte per Sprachbefehl) - siehe
-`vality-server/README.md` fuer den Gesamtzustand.
+(Anwesenheitserkennung), Feature 3 (Nachrichten vorlesen/diktieren),
+Feature 4 (Anrufe & Kontakte per Sprachbefehl), Kalender-Integration und
+ein Hintergrund-Weckwort ("Hi Jarvis") - siehe `vality-server/README.md`
+fuer den Gesamtzustand.
 
 Die App ist **ein** Dashboard-Screen mit mehreren Panels
-(Server-Verbindung, Anwesenheit, Nachrichten, Anrufe & Kontakte), im
-selben visuellen Stil wie das PC-Dashboard (dunkel, Teal-Akzent,
-Eckenklammern) - nicht mehrere getrennte Screens.
+(Server-Verbindung, Anwesenheit, Nachrichten, Anrufe & Kontakte, Kalender,
+Weckwort), im selben visuellen Stil wie das PC-Dashboard (dunkel,
+Teal-Akzent, Eckenklammern) - nicht mehrere getrennte Screens.
 
 ## Wichtiger Hinweis zum nativen Code (Feature 3 + 4)
 
@@ -22,6 +23,17 @@ Autolinking-Auflösung verifiziert - aber in dieser Umgebung stand kein
 Android SDK zur Verfuegung, der Kotlin-Code selbst konnte nicht kompiliert
 werden. Der erste `eas build`/`expo run:android` ist der echte Test. Wenn
 der Build fehlschlaegt, ist das der Ort zum Nachschauen.
+
+`modules/vality-wakeword/` enthaelt das native Weckwort-Modul: ein
+Android-Foreground-Service, der ueber die Porcupine-Engine
+(`ai.picovoice:porcupine-android`, direkt per Maven eingebunden - **kein**
+npm-Paket noetig) offline auf "Jarvis" hoert, plus eine per Canvas
+gezeichnete Einblendung (`OverlayWindow`/`OverlayView`) unten links, wenn
+das Weckwort erkannt wird. Laeuft komplett nativ, unabhaengig vom
+React-Native/JS-Kontext - funktioniert also auch bei geschlossener App,
+solange das Handy eingeschaltet ist. **Nicht** moeglich: Erkennung bei
+ausgeschaltetem Handy - dann laeuft ueberhaupt keine Software mehr, das
+gilt fuer jede App.
 
 ## Wichtig: kein Expo Go
 
@@ -160,6 +172,22 @@ Fuer Feature 4 zusaetzlich:
    Berechtigung im ganzen Projekt ist (loest echte Anrufe ohne
    Wähl-Bildschirm aus).
 
+Fuer das Weckwort zusaetzlich:
+
+10. **Mikrofon** (`RECORD_AUDIO`): normaler Berechtigungs-Dialog, wird
+    beim Aktivieren des Schalters "Weckwort aktiv" abgefragt.
+11. **Anzeige über anderen Apps** (`SYSTEM_ALERT_WINDOW`): wie bei
+    Benachrichtigungszugriff KEIN normaler Dialog - springt in die
+    Android-Einstellungen, dort muss Vality AI manuell erlaubt werden.
+    Ohne diese Berechtigung erkennt das Weckwort trotzdem, zeigt aber
+    keine Einblendung.
+12. Genau wie bei Feature 2/3: Akku-Optimierung deaktivieren, sonst killt
+    Android den Hintergrund-Dienst nach einiger Zeit und "Hi Jarvis"
+    reagiert nicht mehr zuverlaessig. Ein per Wisch-Geste aus der
+    App-Übersicht entfernter Prozess kann den Dienst je nach
+    Hersteller-Android trotz `START_STICKY` beenden - das ist eine
+    bekannte Android-Systemgrenze, kein Bug in diesem Projekt.
+
 ## Testen
 
 1. Server laeuft (`vality-server`, `npm run dev`), `PRESENCE_TOKEN` in
@@ -233,6 +261,21 @@ Fuer Feature 4 zusaetzlich:
    denselben Namen per Sprache nennen → Jarvis sollte nach einem
    genaueren Namen fragen, nicht selbst waehlen.
 
+### Weckwort testen
+
+1. Kostenlosen AccessKey auf https://console.picovoice.ai anlegen (Konto
+   erstellen, "AccessKey" kopieren - kein Training noetig, "Jarvis" ist ein
+   eingebautes Stichwort).
+2. In der App: AccessKey ins Feld "Picovoice AccessKey" eintragen,
+   Mikrofon- und Overlay-Berechtigung erteilen, Schalter "Weckwort aktiv"
+   umlegen.
+3. App schliessen (nicht nur Home-Taste - wirklich schliessen). "Hi
+   Jarvis" sagen. Unten links sollte eine kleine Einblendung mit Kern +
+   Wellenbalken erscheinen (verschwindet nach ein paar Sekunden von
+   selbst, oder antippen oeffnet die App).
+4. Funktioniert es bei geschlossener App nicht: Akku-Optimierung fuer
+   Vality AI deaktivieren (siehe oben) und erneut testen.
+
 ## Bekannte Grenzen
 
 - iOS-Geofencing ist in diesem Setup nicht getestet (Android stand hier
@@ -266,3 +309,15 @@ Fuer Feature 4 zusaetzlich:
 - Bei mehreren Treffern fragt Jarvis nach einem genaueren Namen, bietet
   aber keine nummerierte Auswahl ("1, 2, 3") an - bewusste Vereinfachung,
   um fragiles Zahlwort-Parsing zu vermeiden.
+- Das Weckwort funktioniert nur, solange das Handy eingeschaltet ist -
+  bei ausgeschaltetem Geraet laeuft keine Software, das ist eine harte
+  physikalische Grenze, keine technische Einschraenkung dieses Projekts.
+- Nach Erkennung des Weckworts oeffnet sich die App noch nicht automatisch
+  in einen "Zuhoer"-Modus - die Einblendung ist reines visuelles Feedback,
+  Antippen bringt die App in den Vordergrund, der eigentliche Sprachbefehl
+  muss dort wie gewohnt gestartet werden. Direktes Zuhoeren direkt aus der
+  Einblendung heraus ist ein moeglicher naechster Ausbauschritt.
+- Manche Hersteller-Android-Varianten (aggressive Akku-Optimierer) stoppen
+  den Weckwort-Dienst nach einer Weile trotz `START_STICKY` - Akku-
+  Optimierung deaktivieren hilft, ist aber keine hundertprozentige
+  Garantie ueber alle Hersteller hinweg.
