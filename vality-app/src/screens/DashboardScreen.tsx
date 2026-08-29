@@ -1,0 +1,160 @@
+import React, { useEffect, useRef, useState } from "react";
+import { SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import ConnectionSection from "../features/connection/ConnectionSection";
+import PresenceSection from "../features/presence/PresenceSection";
+import MessagingSection from "../features/messaging/MessagingSection";
+import CallsSection from "../features/calls/CallsSection";
+import CalendarSection from "../features/calendar/CalendarSection";
+import WakeWordSection from "../features/wakeword/WakeWordSection";
+import StatusPill from "../ui/StatusPill";
+import CoreGlyph from "../ui/CoreGlyph";
+import OverviewStrip from "../ui/OverviewStrip";
+import BootScreen from "../ui/BootScreen";
+import HudGrid from "../ui/HudGrid";
+import { StaggerContext } from "../ui/stagger";
+import { colors } from "../ui/theme";
+import { DEFAULT_SETTINGS, loadSettings, type AppSettings } from "../storage/settings";
+
+const REACHABILITY_INTERVAL_MS = 8000;
+
+export default function DashboardScreen() {
+  const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
+  const [loaded, setLoaded] = useState(false);
+  const [connected, setConnected] = useState(false);
+  const settingsRef = useRef(settings);
+  settingsRef.current = settings;
+  const staggerCounter = useRef({ current: 0 }).current;
+
+  useEffect(() => {
+    loadSettings().then((s) => {
+      setSettings(s);
+      setLoaded(true);
+    });
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function check() {
+      const url = settingsRef.current.serverUrl;
+      if (!url) {
+        if (!cancelled) setConnected(false);
+        return;
+      }
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 4000);
+        const res = await fetch(new URL("/api/status", url).toString(), { signal: controller.signal });
+        clearTimeout(timeout);
+        if (!cancelled) setConnected(res.ok);
+      } catch (err) {
+        if (!cancelled) setConnected(false);
+      }
+    }
+
+    check();
+    const interval = setInterval(check, REACHABILITY_INTERVAL_MS);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [settings.serverUrl]);
+
+  if (!loaded) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <BootScreen />
+      </SafeAreaView>
+    );
+  }
+
+  const overviewItems = [
+    { label: "PC", active: connected },
+    { label: "Anwesenheit", active: settings.presenceEnabled },
+    { label: "Nachrichten", active: settings.whatsappEnabled || settings.smsEnabled },
+    { label: "Kalender", active: !!settings.calendarId },
+    { label: "Weckwort", active: settings.wakeWordEnabled },
+  ];
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <HudGrid />
+      <View style={styles.glow} pointerEvents="none" />
+      <View style={styles.glowBottom} pointerEvents="none" />
+
+      <LinearGradient colors={[colors.surfaceRaised, colors.ground]} style={styles.header}>
+        <View style={styles.brandRow}>
+          <CoreGlyph size={40} />
+          <View>
+            <Text style={styles.brand}>VALITY · AI</Text>
+            <Text style={styles.brandSub}>Handy-Begleiter</Text>
+          </View>
+        </View>
+        <StatusPill label={connected ? "PC ERREICHBAR" : "PC NICHT ERREICHBAR"} tone={connected ? "ok" : "danger"} />
+      </LinearGradient>
+
+      <OverviewStrip items={overviewItems} />
+
+      <ScrollView contentContainerStyle={styles.scroll}>
+        <StaggerContext.Provider value={staggerCounter}>
+          <Text style={styles.groupLabel}>Verbindung</Text>
+          <ConnectionSection settings={settings} onSettingsChange={setSettings} connected={connected} />
+
+          <Text style={styles.groupLabel}>Automatisierung</Text>
+          <PresenceSection settings={settings} onSettingsChange={setSettings} />
+          <MessagingSection settings={settings} onSettingsChange={setSettings} />
+          <CallsSection />
+          <CalendarSection settings={settings} onSettingsChange={setSettings} />
+          <WakeWordSection settings={settings} onSettingsChange={setSettings} />
+        </StaggerContext.Provider>
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.ground },
+  glow: {
+    position: "absolute",
+    top: -220,
+    left: "50%",
+    marginLeft: -260,
+    width: 520,
+    height: 520,
+    borderRadius: 260,
+    backgroundColor: colors.accentDim,
+    opacity: 0.16,
+  },
+  glowBottom: {
+    position: "absolute",
+    bottom: -260,
+    right: -140,
+    width: 420,
+    height: 420,
+    borderRadius: 210,
+    backgroundColor: colors.accentDim,
+    opacity: 0.1,
+  },
+  groupLabel: {
+    color: colors.textFaint,
+    fontSize: 10.5,
+    letterSpacing: 2,
+    textTransform: "uppercase",
+    marginTop: 4,
+    marginBottom: -4,
+  },
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.line,
+  },
+  brandRow: { flexDirection: "row", alignItems: "center", gap: 12 },
+  brand: { color: colors.accent, fontWeight: "700", letterSpacing: 2, fontSize: 14 },
+  brandSub: { color: colors.textFaint, fontSize: 10.5, letterSpacing: 1, marginTop: 2 },
+  scroll: { padding: 18, gap: 16 },
+});

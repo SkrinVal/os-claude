@@ -1,0 +1,175 @@
+.hud-frame {
+  position: relative;
+  background: var(--glass-bg);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid var(--line);
+  padding: 18px 20px;
+  box-shadow: var(--shadow-panel);
+  animation: frame-in 0.6s var(--ease-hud) both;
+  animation-delay: var(--frame-delay, 0s);
+  transition:
+    border-color 0.3s ease,
+    box-shadow 0.3s ease,
+    transform 0.3s var(--ease-hud);
+}
+
+@keyframes frame-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Feiner Lichtsaum am oberen Rand - deutet "aktive Flaeche" an, ohne laut
+   zu werden. */
+.hud-frame::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 8%;
+  right: 8%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(var(--accent-rgb), 0.55), transparent);
+  opacity: 0.5;
+}
+
+/* Periodischer Scan-Schimmer, der ueber den Rahmen laeuft - macht jedes
+   Panel spuerbar "aktiv", nicht nur beim Einblenden. Lange Dauer und
+   niedrige Deckkraft, damit es im Augenwinkel lebt statt abzulenken. */
+.hud-frame::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(115deg, transparent 40%, rgba(var(--accent-rgb), 0.06) 50%, transparent 60%);
+  background-size: 260% 260%;
+  background-position: 130% 130%;
+  animation: frame-shimmer 9s ease-in-out infinite;
+  animation-delay: var(--frame-delay, 0s);
+}
+
+@keyframes frame-shimmer {
+  0%,
+  60%,
+  100% {
+    background-position: 130% 130%;
+  }
+  80% {
+    background-position: -30% -30%;
+  }
+}
+
+@media (hover: hover) {
+  .hud-frame:hover {
+    border-color: var(--glass-border);
+    box-shadow: var(--shadow-panel-hover);
+    transform: translateY(-2px);
+  }
+}
+
+.hud-frame__corner {
+  width: 13px;
+  height: 13px;
+  border: 2px solid var(--accent);
+  opacity: 0;
+  pointer-events: none;
+  position: absolute;
+  animation: corner-in 0.5s var(--ease-hud) both;
+  animation-delay: calc(var(--frame-delay, 0s) + 0.16s);
+}
+.hud-frame__corner--tl {
+  top: -1px;
+  left: -1px;
+  border-right: none;
+  border-bottom: none;
+  transform-origin: top left;
+}
+.hud-frame__corner--tr {
+  top: -1px;
+  right: -1px;
+  border-left: none;
+  border-bottom: none;
+  transform-origin: top right;
+}
+.hud-frame__corner--bl {
+  bottom: -1px;
+  left: -1px;
+  border-right: none;
+  border-top: none;
+  transform-origin: bottom left;
+}
+.hud-frame__corner--br {
+  bottom: -1px;
+  right: -1px;
+  border-left: none;
+  border-top: none;
+  transform-origin: bottom right;
+}
+
+@keyframes corner-in {
+  from {
+    opacity: 0;
+    transform: scale(0.35);
+  }
+  to {
+    opacity: 0.7;
+    transform: scale(1);
+  }
+}
+
+.hud-frame__title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0 0 14px;
+}
+
+/* Kleiner pulsierender Glyph vor jedem Panel-Titel - greift die
+   bio-lumineszente Sprache des Core-Rings auf und zieht sich als
+   wiederkehrendes Motiv durchs ganze HUD. */
+.hud-frame__title-glyph {
+  width: 5px;
+  height: 5px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 5px rgba(var(--accent-rgb), 0.9);
+  animation: title-glyph-pulse 2.8s ease-in-out infinite;
+  animation-delay: var(--frame-delay, 0s);
+}
+
+@keyframes title-glyph-pulse {
+  0%,
+  100% {
+    opacity: 0.5;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}
+
+.hud-frame__body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hud-frame,
+  .hud-frame__corner,
+  .hud-frame__title-glyph,
+  .hud-frame::after {
+    animation: none !important;
+    opacity: 1;
+  }
+  .hud-frame:hover {
+    transform: none;
+  }
+}

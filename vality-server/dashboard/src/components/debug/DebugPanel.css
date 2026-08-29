@@ -1,0 +1,73 @@
+.debug-panel {
+  position: fixed;
+  top: 64px;
+  right: 16px;
+  width: 240px;
+  background: var(--bg-raised);
+  border: 1px solid var(--line-bright);
+  border-radius: 8px;
+  padding: 16px;
+  z-index: 50;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+}
+
+.debug-panel__title {
+  margin: 0 0 12px;
+}
+
+.debug-panel__modes {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+.debug-panel__mode-btn {
+  flex: 1;
+  background: var(--bg-inset);
+  border: 1px solid var(--line-bright);
+  color: var(--text-dim);
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  padding: 7px 4px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition:
+    border-color 0.2s,
+    color 0.2s,
+    background 0.2s;
+}
+.debug-panel__mode-btn:hover {
+  color: var(--text);
+  border-color: var(--accent-dim);
+}
+.debug-panel__mode-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.debug-panel__mode-btn--active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.debug-panel__grid {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 10px;
+  margin: 0 0 12px;
+  font-size: 11.5px;
+}
+.debug-panel__grid dt {
+  color: var(--text-faint);
+}
+.debug-panel__grid dd {
+  margin: 0;
+  color: var(--accent);
+  text-align: right;
+}
+
+.debug-panel__note {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--text-faint);
+}

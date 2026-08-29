@@ -1,0 +1,75 @@
+name: Vality-App Android-Build
+
+# Baut die Handy-App direkt hier auf GitHub (kein Expo-Account/EAS Build
+# noetig) - Ergebnis ist eine fertige, installierbare APK als Download-
+# Anhang am fertigen Lauf. Manuell ausloesbar (Tab "Actions" -> dieser
+# Workflow -> "Run workflow") oder automatisch bei Aenderungen an
+# vality-app/.
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - "**"
+    paths:
+      - "vality-app/**"
+      - ".github/workflows/build-vality-app.yml"
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: vality-app
+    steps:
+      - name: Repository auschecken
+        uses: actions/checkout@v4
+
+      - name: Node.js einrichten
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: vality-app/package-lock.json
+
+      - name: Java (JDK 17) einrichten
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Android-SDK einrichten
+        uses: android-actions/setup-android@v3
+
+      - name: Abhängigkeiten installieren
+        run: npm ci
+
+      # Erzeugt den nativen android/-Ordner aus app.config.ts - inkl.
+      # Autolinking des eigenen modules/vality-messaging-Moduls und von
+      # expo-calendar. Der Ordner ist bewusst nicht eingecheckt (siehe
+      # .gitignore), entsteht bei jedem Lauf frisch.
+      - name: Natives Android-Projekt erzeugen (expo prebuild)
+        run: npx expo prebuild --platform android --no-install
+
+      - name: Gradle-Wrapper ausführbar machen
+        run: chmod +x android/gradlew
+
+      # Release-Build, nicht Debug: ein Debug-APK (assembleDebug) haengt am
+      # "Development Client" von expo-dev-client - die App zeigt dann nur
+      # den Bildschirm "Start a local development server with npx expo
+      # start" und braucht dafuer einen laufenden PC, kein eigenstaendiges
+      # Programm. Ein Release-Build hat den JS-Code fest eingebaut und
+      # startet direkt in die echte App, ganz ohne PC/Metro-Server.
+      # Signiert wird trotzdem automatisch mit dem generierten Debug-
+      # Schluessel (React-Native-Standard-Vorlage setzt signingConfigs.debug
+      # auch fuer den release-Buildtyp) - reicht zum Sideloaden auf dem
+      # eigenen Handy, kein eigener Keystore noetig.
+      - name: APK bauen (assembleRelease)
+        working-directory: vality-app/android
+        run: ./gradlew assembleRelease --no-daemon
+
+      - name: APK als Download bereitstellen
+        uses: actions/upload-artifact@v4
+        with:
+          name: vality-app-release-apk
+          path: vality-app/android/app/build/outputs/apk/release/app-release.apk
+          if-no-files-found: error

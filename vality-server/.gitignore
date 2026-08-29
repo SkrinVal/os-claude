@@ -1,0 +1,17 @@
+node_modules/
+dist/
+.env
+
+# public/ ist jetzt Build-Ausgabe von dashboard/ (siehe dashboard/vite.config.ts),
+# keine Handarbeit mehr - Quelle liegt in dashboard/src. Kein .gitkeep noetig,
+# `npm run build` in dashboard/ legt das Verzeichnis bei Bedarf selbst an.
+# Fuehrender Slash: nur vality-server/public/, NICHT dashboard/public/
+# (das enthaelt echte Quell-Assets wie favicon.svg und die Erdtextur).
+/public/
+data/tmp/*
+data/audio-out/*
+data/memory/*
+!data/tmp/.gitkeep
+!data/audio-out/.gitkeep
+!data/memory/.gitkeep
+*.log

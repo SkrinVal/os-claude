@@ -1,0 +1,72 @@
+.steckbrief-card {
+  max-width: 560px;
+  margin: 0 auto;
+}
+
+.steckbrief-card__head {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.steckbrief-card__name {
+  margin: 0 0 4px;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text);
+  text-shadow: 0 0 18px rgba(var(--accent-rgb), 0.18);
+}
+
+.steckbrief-card__kind {
+  color: var(--accent);
+}
+
+.steckbrief-card__summary {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--text-dim);
+}
+
+.steckbrief-card__facts {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.steckbrief-card__facts li {
+  font-size: 12.5px;
+  color: var(--text-faint);
+  padding-left: 14px;
+  position: relative;
+}
+.steckbrief-card__facts li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 7px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent-dim);
+}
+
+.steckbrief-card__source {
+  align-self: flex-start;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  text-decoration: none;
+  border-bottom: 1px solid var(--accent-dim);
+  padding-bottom: 1px;
+  transition: border-color 0.2s ease;
+}
+.steckbrief-card__source:hover {
+  border-color: var(--accent);
+}
+.steckbrief-card__source:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}

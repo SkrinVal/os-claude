@@ -1,0 +1,117 @@
+import { Router } from "express";
+import multer from "multer";
+import { randomUUID } from "node:crypto";
+import { promises as fs } from "node:fs";
+import path from "node:path";
+import { config } from "../config";
+import { features } from "../config/features";
+import { transcribeAudio } from "../stt/whisper";
+import { synthesizeSpeech } from "../tts/piper";
+import { addInteraction } from "../util/history";
+import { broadcast } from "../ws/hub";
+import { handleMemoryCommand } from "../memory/commands";
+import { buildPromptContext } from "../memory/context";
+import { recordConversationTurn } from "../memory/store";
+import { handleMessageCommand } from "../messages/commands";
+import { handleCallCommand } from "../calls/commands";
+import { handleConfirmCommand } from "../shared/confirmCommands";
+import { handleHudCommand } from "../hud/commands";
+import { classifyAndRespond } from "../hud/nlIntent";
+import { handleReminderCommand } from "../reminders/commands";
+
+export const voiceRouter = Router();
+
+const upload = multer({ dest: config.tmpDir });
+
+voiceRouter.post("/voice", upload.single("audio"), async (req, res) => {
+  const uploaded = req.file;
+  if (!uploaded) {
+    res.status(400).json({ error: "Kein Audio empfangen (Feld 'audio' fehlt)." });
+    return;
+  }
+
+  const id = randomUUID();
+  broadcast({ type: "mic_status", listening: false });
+
+  // Grobe Zeitmessung pro Schritt im Server-Log - ohne die weiss man beim
+  // Optimieren nur raten, welcher Schritt (Whisper/Claude/Piper) tatsaechlich
+  // die Zeit braucht.
+  const stageStart = { t: Date.now() };
+  function logStage(label: string): void {
+    const now = Date.now();
+    console.log(`[voice] ${label}: ${now - stageStart.t}ms`);
+    stageStart.t = now;
+  }
+
+  try {
+    const transcript = await transcribeAudio(uploaded.path);
+    logStage("whisper (STT)");
+    if (!transcript) {
+      res.status(422).json({ error: "Whisper hat keinen Text erkannt." });
+      return;
+    }
+
+    const confirmResult =
+      features.messages || features.calls ? await handleConfirmCommand(transcript) : null;
+    const messageResult =
+      !confirmResult && features.messages ? await handleMessageCommand(transcript) : null;
+    const callResult =
+      !confirmResult && !messageResult && features.calls ? await handleCallCommand(transcript) : null;
+    const hudResult =
+      !confirmResult && !messageResult && !callResult ? await handleHudCommand(transcript) : null;
+    const memoryResult =
+      !confirmResult && !messageResult && !callResult && !hudResult && features.memory
+        ? await handleMemoryCommand(transcript)
+        : null;
+    const reminderResult =
+      !confirmResult && !messageResult && !callResult && !hudResult && !memoryResult
+        ? await handleReminderCommand(transcript)
+        : null;
+
+    let reply: string;
+    if (confirmResult) {
+      reply = confirmResult.reply;
+    } else if (messageResult) {
+      reply = messageResult.reply;
+    } else if (callResult) {
+      reply = callResult.reply;
+    } else if (hudResult) {
+      reply = hudResult.reply;
+    } else if (memoryResult) {
+      reply = memoryResult.reply;
+    } else if (reminderResult) {
+      reply = reminderResult.reply;
+    } else {
+      // Kein starres Regex-Muster hat gegriffen (siehe hud/commands.ts) -
+      // hier uebernimmt ein einzelner Claude-Aufruf sowohl die
+      // Absichtserkennung (Stadt/Recherche/Globus/Uebersicht per freier
+      // Formulierung) als auch, falls keine Navigation gemeint ist, gleich
+      // die normale Antwort (siehe hud/nlIntent.ts).
+      const contextBlock = features.memory ? await buildPromptContext() : "";
+      reply = await classifyAndRespond(transcript, contextBlock);
+    }
+    logStage("Antwort ermitteln (Regex-Befehle/Claude)");
+
+    // Unabhaengig voneinander - das Verlaufs-Schreiben muss nicht auf die
+    // TTS-Synthese warten (und umgekehrt), beides parallel starten statt
+    // nacheinander.
+    const [, audioPath] = await Promise.all([
+      features.memory ? recordConversationTurn(transcript, reply) : Promise.resolve(),
+      synthesizeSpeech(reply),
+    ]);
+    logStage("Piper (TTS) + Verlauf speichern");
+    const audioUrl = `/audio/${path.basename(audioPath)}`;
+    const ts = new Date().toISOString();
+
+    addInteraction({ id, transcript, reply, audioUrl, ts });
+    broadcast({ type: "interaction", id, transcript, reply, audioUrl, ts });
+
+    res.json({ id, transcript, reply, audioUrl, ts });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    broadcast({ type: "error", message, ts: new Date().toISOString() });
+    res.status(500).json({ error: message });
+  } finally {
+    await fs.rm(uploaded.path, { force: true });
+  }
+});

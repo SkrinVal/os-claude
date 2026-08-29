@@ -1,0 +1,452 @@
+.core-ring {
+  position: relative;
+  flex-shrink: 0;
+  /* Nur der Knopf selbst soll klickbar sein - Halo/Puls/SVG-Deko duerfen
+     nie Klicks auf benachbarte UI abfangen (bleiben ueber inset/blur
+     absichtlich groesser als der Ring). */
+  pointer-events: none;
+  /* Bereitet den Browser auf die Groessen-/Positions-Animation beim
+     Moduswechsel vor (eigener Compositor-Layer statt erst mitten in der
+     Animation eine Ebene aufzubauen). */
+  will-change: transform;
+}
+
+/* Waehrend der Ring zwischen Mitte und Ecke fliegt (siehe
+   onLayoutAnimationStart/-Complete in CoreRing.tsx): die unabhaengigen
+   Endlosanimationen kurz anhalten, damit der Browser nur das eine
+   Layout-Flip berechnen muss statt zusaetzlich ein halbes Dutzend
+   Loop-Animationen - das war der Ruckler beim Verkleinern in die Ecke. */
+.core-ring[data-flying="true"] .core-ring__membrane,
+.core-ring[data-flying="true"] .core-ring__ribs,
+.core-ring[data-flying="true"] .core-ring__bar,
+.core-ring[data-flying="true"] .core-ring__orbit,
+.core-ring[data-flying="true"] .core-ring__sphere-edge {
+  animation-play-state: paused;
+}
+.core-ring__button {
+  pointer-events: auto;
+}
+
+.core-ring__halo {
+  position: absolute;
+  inset: -14%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(var(--accent-rgb), 0.2), transparent 68%);
+  filter: blur(6px);
+  animation: core-breathe 3.4s ease-in-out infinite;
+  z-index: 0;
+}
+.core-ring[data-state="thinking"] .core-ring__halo--a {
+  background: radial-gradient(circle, rgba(var(--warn-rgb), 0.24), transparent 68%);
+  animation-duration: 1.1s;
+}
+.core-ring[data-state="error"] .core-ring__halo--a {
+  background: radial-gradient(circle, rgba(var(--danger-rgb), 0.26), transparent 68%);
+}
+
+/* Zweite, groessere und langsamere Bloom-Schicht im Zweitakzent - traegt
+   fuers Auge kaum wahrnehmbar zur Tiefe bei, ohne die Akzentfarbe zu
+   verwaessern. */
+.core-ring__halo--b {
+  inset: -28%;
+  background: radial-gradient(circle, rgba(var(--accent-2-rgb), 0.12), transparent 72%);
+  filter: blur(16px);
+  animation: core-breathe 5.6s ease-in-out infinite;
+  animation-delay: -2.1s;
+}
+
+@keyframes core-breathe {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Rotierender Leuchtkranz hinter der Knopf-Flaeche - nur in aktiven
+   Zustaenden sichtbar, blutet am Knopfrand durch. */
+.core-ring__pulse {
+  position: absolute;
+  inset: 12%;
+  border-radius: 50%;
+  z-index: 1;
+  opacity: 0;
+  filter: blur(6px);
+  background: conic-gradient(from 0deg, transparent 0%, rgba(var(--accent-rgb), 0.9) 12%, transparent 30%, transparent 100%);
+  animation: core-pulse-spin 2.4s linear infinite;
+  transition: opacity 0.4s var(--ease-hud);
+}
+.core-ring[data-state="listening"] .core-ring__pulse,
+.core-ring[data-state="speaking"] .core-ring__pulse {
+  opacity: 0.8;
+}
+.core-ring[data-state="thinking"] .core-ring__pulse {
+  opacity: 0.55;
+  background: conic-gradient(from 0deg, transparent 0%, rgba(var(--warn-rgb), 0.85) 12%, transparent 30%, transparent 100%);
+  animation-duration: 1s;
+}
+@keyframes core-pulse-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.core-ring__svg {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: block;
+  z-index: 1;
+  overflow: visible;
+}
+
+/* Wabernde Membran statt technischem Kreisring - zwei leicht
+   unregelmaessige Konturen, gegenlaeufig und sehr langsam rotierend, dazu
+   ein zusaetzliches, laengeres Puls-Timing auf dem Filter, damit die Form
+   nie ganz stillsteht. */
+.core-ring__membrane {
+  fill: none;
+  stroke: var(--accent);
+  filter: drop-shadow(0 0 6px rgba(var(--accent-rgb), 0.55));
+  transform-origin: 100px 100px;
+}
+.core-ring__membrane--outer {
+  stroke-width: 1.4;
+  opacity: 0.75;
+  animation:
+    core-spin 64s linear infinite,
+    membrane-pulse 7s ease-in-out infinite;
+}
+.core-ring__membrane--inner {
+  stroke-width: 1;
+  opacity: 0.45;
+  animation:
+    core-spin-rev 48s linear infinite,
+    membrane-pulse 5.5s ease-in-out infinite reverse;
+}
+@keyframes membrane-pulse {
+  0%,
+  100% {
+    stroke-width: 1;
+  }
+  50% {
+    stroke-width: 1.8;
+  }
+}
+.core-ring[data-state="thinking"] .core-ring__membrane {
+  stroke: var(--warn);
+  filter: drop-shadow(0 0 6px rgba(var(--warn-rgb), 0.55));
+}
+.core-ring[data-state="error"] .core-ring__membrane {
+  stroke: var(--danger);
+  filter: drop-shadow(0 0 6px rgba(var(--danger-rgb), 0.55));
+}
+.core-ring[data-state="listening"] .core-ring__membrane--outer,
+.core-ring[data-state="listening"] .core-ring__membrane--inner {
+  animation-duration: 16s, 3.4s;
+}
+
+.core-ring__ribs {
+  transform-origin: 100px 100px;
+  animation: core-spin-rev 90s linear infinite;
+}
+.core-ring__rib {
+  stroke: var(--accent-dim);
+  stroke-width: 2;
+  stroke-linecap: round;
+  opacity: 0.5;
+}
+.core-ring__rib--major {
+  stroke: var(--accent);
+  stroke-width: 2.6;
+  opacity: 0.85;
+}
+.core-ring[data-state="thinking"] .core-ring__rib--major {
+  stroke: var(--warn);
+}
+.core-ring[data-state="error"] .core-ring__rib--major {
+  stroke: var(--danger);
+}
+
+/* Reaktiver "Spektrum"-Kranz: Grundlaenge per CSS, Ausschlag per Inline-
+   Transform (skaliert live mit dem Mikrofonpegel, siehe CoreRing.tsx).
+   Die leise Eigenanimation sorgt dafuer, dass der Ring auch im Ruhezustand
+   nicht komplett erstarrt wirkt. */
+.core-ring__bar {
+  stroke: var(--accent);
+  stroke-width: 2;
+  stroke-linecap: round;
+  opacity: 0.5;
+  transition: transform 90ms linear;
+  animation: bar-idle 3.6s ease-in-out infinite;
+  animation-delay: var(--bar-delay, 0s);
+}
+.core-ring[data-state="listening"] .core-ring__bar,
+.core-ring[data-state="speaking"] .core-ring__bar {
+  opacity: 0.85;
+}
+.core-ring[data-state="thinking"] .core-ring__bar {
+  stroke: var(--warn);
+}
+.core-ring[data-state="error"] .core-ring__bar {
+  stroke: var(--danger);
+  opacity: 0.3;
+}
+@keyframes bar-idle {
+  0%,
+  100% {
+    opacity: 0.32;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+.core-ring__orbit {
+  animation-name: core-spin;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+.core-ring__orbit--rev {
+  animation-name: core-spin-rev;
+}
+.core-ring__orbit-dot {
+  fill: var(--accent);
+  filter: drop-shadow(0 0 3px rgba(var(--accent-rgb), 0.9));
+  opacity: 0.75;
+}
+.core-ring[data-state="listening"] .core-ring__orbit,
+.core-ring[data-state="thinking"] .core-ring__orbit {
+  animation-duration: 4s !important;
+}
+.core-ring[data-state="error"] .core-ring__orbit-dot {
+  fill: var(--danger);
+  filter: drop-shadow(0 0 3px rgba(var(--danger-rgb), 0.9));
+}
+
+@keyframes core-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes core-spin-rev {
+  to {
+    transform: rotate(-360deg);
+  }
+}
+
+/* Kern-Sphaere: Hex-Netzwerk + Funken statt eines leeren Kreises. */
+.core-ring__sphere-edge {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1;
+  opacity: 0.5;
+  animation: core-breathe 4.2s ease-in-out infinite;
+}
+.core-ring[data-state="thinking"] .core-ring__sphere-edge {
+  stroke: var(--warn);
+}
+.core-ring[data-state="error"] .core-ring__sphere-edge {
+  stroke: var(--danger);
+}
+
+.core-ring__hexdots circle {
+  fill: var(--accent);
+}
+.core-ring[data-state="thinking"] .core-ring__hexdots circle {
+  fill: var(--warn);
+}
+.core-ring[data-state="error"] .core-ring__hexdots circle {
+  fill: var(--danger);
+}
+
+.core-ring__sparkle {
+  fill: #fff;
+  filter: drop-shadow(0 0 3px rgba(var(--accent-rgb), 0.95));
+  animation: spark-blink 2.6s ease-in-out infinite;
+  animation-delay: var(--spark-delay, 0s);
+}
+@keyframes spark-blink {
+  0%,
+  100% {
+    opacity: 0.15;
+    transform: scale(0.6);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+}
+
+.core-ring__button {
+  position: absolute;
+  inset: 15%;
+  z-index: 2;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 38%, rgba(var(--accent-rgb), 0.06), rgba(var(--accent-rgb), 0.01));
+  border: 1px solid var(--accent-dim);
+  color: var(--accent);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10%;
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  transition:
+    box-shadow 0.35s var(--ease-hud),
+    border-color 0.35s ease,
+    transform 0.12s ease;
+}
+.core-ring__button::before {
+  content: "";
+  position: absolute;
+  inset: 6% 12% auto 12%;
+  height: 38%;
+  border-radius: 50%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent 75%);
+  pointer-events: none;
+}
+.core-ring__button:active {
+  transform: scale(0.97);
+}
+.core-ring__button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+@media (hover: hover) {
+  .core-ring__button:hover {
+    transform: scale(1.015);
+  }
+}
+
+.core-ring[data-expanded="true"] .core-ring__button {
+  animation: core-idle-glow 3.2s ease-in-out infinite;
+}
+@keyframes core-idle-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 14px rgba(var(--accent-rgb), 0.12);
+  }
+  50% {
+    box-shadow: 0 0 28px rgba(var(--accent-rgb), 0.28);
+  }
+}
+
+.core-ring[data-state="listening"] .core-ring__button {
+  border-color: var(--accent);
+  box-shadow:
+    0 0 30px rgba(var(--accent-rgb), 0.4),
+    inset 0 0 24px rgba(var(--accent-rgb), 0.14);
+}
+.core-ring[data-state="thinking"] .core-ring__button {
+  border-color: var(--warn);
+  box-shadow: 0 0 26px rgba(var(--warn-rgb), 0.3);
+}
+.core-ring[data-state="speaking"] .core-ring__button {
+  border-color: var(--accent);
+  box-shadow: 0 0 34px rgba(var(--accent-rgb), 0.5);
+}
+.core-ring[data-state="error"] .core-ring__button {
+  border-color: var(--danger);
+}
+
+.core-ring__brand {
+  font-size: clamp(11px, 3vw, 13px);
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  color: var(--accent);
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.85);
+}
+
+.core-ring__status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  font-size: clamp(10px, 2.4vw, 11.5px);
+  letter-spacing: 0.1em;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.85);
+}
+
+.core-ring__action {
+  max-width: 100%;
+  font-size: clamp(8.5px, 2vw, 9.5px);
+  letter-spacing: 0.08em;
+  color: var(--text-faint);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.85);
+}
+
+.core-ring__status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text-faint);
+  flex-shrink: 0;
+}
+.core-ring__status-dot--listening {
+  background: var(--accent);
+  box-shadow: 0 0 6px var(--accent);
+}
+.core-ring__status-dot--thinking {
+  background: var(--warn);
+  box-shadow: 0 0 6px var(--warn);
+  animation: dot-blink 0.8s steps(1) infinite;
+}
+.core-ring__status-dot--speaking {
+  background: var(--accent);
+  box-shadow: 0 0 6px var(--accent);
+  animation: dot-blink 0.5s steps(1) infinite;
+}
+.core-ring__status-dot--error {
+  background: var(--danger);
+  box-shadow: 0 0 6px var(--danger);
+}
+.core-ring__status-dot--idle {
+  background: var(--ok);
+  box-shadow: 0 0 6px var(--ok);
+}
+.core-ring__status-dot--solo {
+  width: 10px;
+  height: 10px;
+}
+
+@keyframes dot-blink {
+  50% {
+    opacity: 0.3;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .core-ring__membrane,
+  .core-ring__ribs,
+  .core-ring__halo,
+  .core-ring__pulse,
+  .core-ring__bar,
+  .core-ring__orbit,
+  .core-ring__sphere-edge,
+  .core-ring__sparkle,
+  .core-ring__button {
+    animation: none !important;
+  }
+  .core-ring__pulse {
+    opacity: 0 !important;
+  }
+  .core-ring__sparkle {
+    opacity: 0.7 !important;
+    transform: none !important;
+  }
+}
